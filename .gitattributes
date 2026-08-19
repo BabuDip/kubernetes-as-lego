@@ -1,0 +1,22 @@
+# run below command to make sure the .gitconfig is set correctly
+# ===============================================================
+# Windows, macOS, Linux – all the same: never change line endings automatically.
+# git config --global core.autocrlf false
+# ---------------------------------------------------------------
+
+# Make every recognised text file stay LF in both repo *and* working tree
+* text eol=lf
+
+# --- Files that must *always* be LF in every working tree ---
+*.sh      text eol=lf
+*.py      text eol=lf
+*.yml     text eol=lf
+
+# --- Files that must *always* be CRLF on Windows check‑out ---
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# --- Binary files (never touch line endings) ---
+*.png     binary
+*.jpg     binary
+*.pdf     binary
