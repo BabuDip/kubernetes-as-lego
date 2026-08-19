@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=qless_cafe
+POSTGRES_USER=IqnjxsKvCbiLdvpwCtZiZbCZaCyAkhbj
+POSTGRES_PASSWORD=33Zqtd3PfLubmQHpZcpEOVaIw76iPK1xTweYdc9IPz4E2TQe16B7n1HVQ8pwkr9L

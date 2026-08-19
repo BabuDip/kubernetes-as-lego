@@ -1,0 +1,190 @@
+[project]
+name = "qless-cafe"
+version = "0.1.0"
+description = "Digital cafe experience without being on the Human Queue."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Dipendra Paudel", email = "dipendra.paudel@qless.cafe" },
+]
+requires-python = "==3.14.*"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "argon2-cffi==25.1.0",
+  "celery==5.6.3",
+  "channels==4.3.2",
+  "channels-redis==4.3.0",
+  "collectfasta==3.3.3",
+  "django==6.0.8",
+  "django-celery-beat==2.9.0",
+  "django-environ==0.14.0",
+  "django-redis==7.0.0",
+  "django-storages[google]==1.14.6",
+  "djangorestframework==3.18.0",
+  "gunicorn==26.0.0",
+  "hiredis==3.4.1",
+  "pillow==12.3.0",
+  "psycopg[c]==3.3.4",
+  "redis==8.1.0",
+  "uvicorn[standard]==0.52.3",
+  "uvicorn-worker==0.4.0",
+]
+
+[dependency-groups]
+dev = [
+  "celery[pytest]==5.6.3",
+  "coverage==7.15.4",
+  "django-coverage-plugin==3.2.2",
+  "django-debug-toolbar==7.1.1",
+  "django-extensions==4.1",
+  "django-stubs[compatible-mypy]==6.0.9",
+  "django-upgrade==1.31.1",
+  "djangorestframework-stubs==3.18.0",
+  "djlint==1.44.2",
+  "factory-boy==3.3.3",
+  "ipdb==0.13.13",
+  "mypy==2.3.0",
+  "pre-commit==4.6.2",
+  "psycopg[c]==3.3.4",
+  "pytest==9.1.1",
+  "pytest-django==4.14.0",
+  "pytest-sugar==1.1.1",
+  "ruff==0.16.3",
+  "watchfiles==1.2.0",
+  "werkzeug[watchdog]==3.1.8",
+]
+
+# ==== djLint ====
+[tool.djlint]
+profile = "django"
+include = "H017,H035"
+indent = 2
+max_line_length = 119
+blank_line_after_tag = "load,extends"
+close_void_tags = true
+format_css = true
+format_js = true
+custom_blocks = "element,slot"
+ignore = "H006,H030,H031"
+css.indent_size = 2
+js.indent_size = 2
+
+# ==== ruff ====
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+extend-exclude = [
+  "*/migrations/*.py",
+  "staticfiles/*",
+]
+lint.select = [
+  "A",
+  "ASYNC",
+  "B",
+  "BLE",
+  "C4",
+  "C90",
+  "COM",
+  "DJ",
+  "DTZ",
+  "E",
+  "EM",
+  "ERA",
+  "EXE",
+  "F",
+  "FA",
+  "FBT",
+  "FLY",
+  "G",
+  "I",
+  "ICN",
+  "INP",
+  "INT",
+  "ISC",
+  "N",
+  "PD",
+  "PERF",
+  "PGH",
+  "PIE",
+  "PL",
+  "PT",
+  "PTH",
+  "PYI",
+  "Q",
+  "RET",
+  "RSE",
+  "RUF",
+  "S",
+  "SIM",
+  "SLF",
+  "SLOT",
+  "T10",
+  "T20",
+  "TC",
+  "TID",
+  "TRY",
+  "UP",
+  "W",
+  "YTT",
+]
+lint.ignore = [
+  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+  "S101",   # Use of assert detected https://docs.astral.sh/ruff/rules/assert/
+  "SIM102", # sometimes it's better to nest
+  # of types for comparison.
+  # Deactivated because it can make the code slow:
+  # https://github.com/astral-sh/ruff/issues/7871
+]
+lint.isort.force-single-line = true
+
+# ==== pyproject-fmt ====
+[tool.pyproject-fmt]
+keep_full_version = true
+
+# ==== mypy ====
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.14"
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+plugins = [
+  "mypy_django_plugin.main",
+  "mypy_drf_plugin.main",
+]
+warn_unused_configs = true
+overrides = [
+  # Django migrations should not produce any errors:
+  { module = "*.migrations.*", ignore_errors = true },
+  # factory_boy's Factory stubs don't resolve to the produced model instance, so every
+  # attribute access on a Factory() call looks like an error here even though it's fine.
+  { module = "*.tests.*", disable_error_code = [ "attr-defined" ] },
+]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+# ==== pytest ====
+[tool.pytest]
+addopts = [
+  "--ds=config.settings.test",
+  "--reuse-db",
+  "--import-mode=importlib",
+  # Registers celery's pytest plugin early — the equivalent of a root conftest.py's
+  # `pytest_plugins`, which pytest no longer allows outside the rootdir conftest.
+  "-p",
+  "celery.contrib.pytest",
+]
+minversion = "9.0"
+python_files = [
+  "tests.py",
+  "test_*.py",
+]
+
+[tool.coverage]
+# ==== Coverage ====
+run.include = [ "qless_cafe/**" ]
+run.omit = [ "*/migrations/*", "*/tests/*" ]
+run.plugins = [ "django_coverage_plugin" ]
