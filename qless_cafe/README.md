@@ -485,7 +485,7 @@ Today there is one task, `qless_cafe.orders.tasks.send_order_receipt_email`:
    max_retries=3, default_retry_delay=60`).
 
 Locally, outgoing mail is caught by [Mailpit](http://localhost:8025) instead of a
-real inbox — nothing ever leaves your machine in development.
+real inbox; bare local runs use the console backend and print messages to stdout.
 
 ---
 
