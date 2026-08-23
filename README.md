@@ -46,7 +46,7 @@ What you need on your machine depends on how far along the guide you're followin
 | [uv](https://docs.astral.sh/uv/) | Step 0 (bare local run) — manages the virtualenv and Python deps |
 | [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Step 1 onward |
 | [just](https://github.com/casey/just#installation) | Recommended for Step 1 onward — thin wrapper around `docker compose` |
-| [Node.js 22](https://nodejs.org/) + npm | Only when editing `frontend/src/` (the built SPA is otherwise served by Django/Docker) |
+| [Node.js 20+](https://nodejs.org/) + npm | When building/running the SPA or editing `frontend/src/`; Django/Docker serves the generated static files |
 | [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Step 3 onward |
 
 ---
