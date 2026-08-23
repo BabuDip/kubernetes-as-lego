@@ -41,7 +41,7 @@ What you need on your machine to follow along with the talk:
 | [Python 3.14](https://www.python.org/downloads/) | bare local run |
 | [uv](https://docs.astral.sh/uv/) | bare local run — manages the virtualenv and Python deps |
 | [Node.js 20+](https://nodejs.org/) + npm | When building/running the SPA or editing `frontend/src/`; Django/Docker serves the generated static files |
-| [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Containerising and running containerised application |
+| [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Containerising and running a containerised application |
 | [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Running Kubernetes locally |
 | [Helm](https://helm.sh/) & [Kustomize](https://kustomize.io/) | Running different Kubernetes configurations and overlays (Different Environments) |
 | [kopf](https://kopf.readthedocs.io/) (Python, installed via `uv`) | Building Custom CRDs |
@@ -50,7 +50,7 @@ What you need on your machine to follow along with the talk:
 
 ## Step 1 — Run the app locally
 
-With the help of Cookiecutter Django, the application is scaffolded quickly, which you can run locally:
+With the help of Cookiecutter Django, the application is scaffolded quickly, so you can run it locally:
 
 ### build the frontend SPA (React) and serve it via Django
 ```bash
