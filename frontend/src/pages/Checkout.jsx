@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useCart } from "../context/CartContext.jsx";
@@ -13,11 +13,16 @@ export default function Checkout() {
   const [note, setNote] = useState("");
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState(null);
+  // `paying` and the cart-clearing update land in the same React batch on success,
+  // so by the time this effect re-runs `paying` is already false too — a plain ref
+  // (updated synchronously, unlike state) is what actually distinguishes "emptied by
+  // a successful order" from "empty on arrival".
+  const orderPlacedRef = useRef(false);
 
   // Only bounce back to /cart if it's empty before checkout even starts —
-  // not mid-payment, when clear() legitimately empties it after a successful order.
+  // not because a successful order just cleared it.
   useEffect(() => {
-    if (lines.length === 0 && !paying) {
+    if (lines.length === 0 && !orderPlacedRef.current) {
       navigate("/cart");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,6 +43,7 @@ export default function Checkout() {
         pickup_preference: pickup,
         note,
       });
+      orderPlacedRef.current = true;
       // Navigate away from /checkout first — clearing the cart re-renders this page,
       // and its empty-cart guard would otherwise redirect to /cart before we get there.
       navigate(`/orders/${order.id}`, { state: { justPlaced: true } });
