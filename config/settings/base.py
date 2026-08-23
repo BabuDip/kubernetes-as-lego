@@ -1,6 +1,7 @@
 # ruff: noqa: ERA001, E501
 """Base settings to build other settings files upon."""
 
+import os
 import ssl
 from pathlib import Path
 
@@ -58,6 +59,10 @@ try:
         },
     }
 except environ.ImproperlyConfigured:
+    # Never silently swap to an ephemeral SQLite DB in production: a missing
+    # POSTGRES_* var there is a misconfiguration that must fail fast.
+    if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.production":
+        raise
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
