@@ -45,7 +45,7 @@ What you need on your machine depends on how far along the guide you're followin
 | [Python 3.14](https://www.python.org/downloads/) | Step 0 (bare local run) |
 | [uv](https://docs.astral.sh/uv/) | Step 0 (bare local run) — manages the virtualenv and Python deps |
 | [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Step 1 onward |
-| [just](https://github.com/casey/just#installation) | Step 1 onward — thin wrapper around `docker compose` |
+| [just](https://github.com/casey/just#installation) | Recommended for Step 1 onward — thin wrapper around `docker compose` |
 | [Node.js 22](https://nodejs.org/) + npm | Only when editing `frontend/src/` (the built SPA is otherwise served by Django/Docker) |
 | [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Step 3 onward |
 
