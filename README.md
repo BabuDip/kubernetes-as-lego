@@ -1,5 +1,12 @@
 # K8s as Lego
 
+[![CI](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yml/badge.svg)](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yml)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![Django 6.0](https://img.shields.io/badge/django-6.0-092E20?logo=django&logoColor=white)](pyproject.toml)
+[![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](frontend/package.json)
+[![uv](https://img.shields.io/badge/managed%20by-uv-DE5FE9?logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A hands-on, step-by-step path from *"a working application"* to *"that application
 running on Kubernetes"* — building up the pieces one Lego brick at a time instead of
 dropping a finished cluster manifest on day one.
@@ -14,6 +21,33 @@ for the frontend.
 See [qless_cafe/README.md](qless_cafe/README.md) for the full application
 documentation — architecture, API reference, order lifecycle, tech stack, testing,
 etc. This README only tracks the Kubernetes learning path built around it.
+
+---
+
+## Tech stack
+
+| Layer | Tech |
+|-------|------|
+| Backend | Python 3.14, Django 6.0, Django REST Framework, Django Channels (WebSockets), Celery + django-celery-beat |
+| Frontend | React 19, Vite, React Router |
+| Data | PostgreSQL 18, Redis 7 |
+| Dev tooling | [uv](https://docs.astral.sh/uv/) (Python deps), npm (frontend deps), [just](https://github.com/casey/just) (task runner), Docker Compose, pre-commit, ruff, mypy, pytest, ESLint, Prettier |
+| Ops (this guide) | Docker, Kubernetes (kind/minikube), and whatever each step adds |
+
+---
+
+## Prerequisites
+
+What you need on your machine depends on how far along the guide you're following:
+
+| Tool | Needed for |
+|------|------------|
+| [Python 3.14](https://www.python.org/downloads/) | Step 0 (bare local run) |
+| [uv](https://docs.astral.sh/uv/) | Step 0 (bare local run) — manages the virtualenv and Python deps |
+| [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Step 1 onward |
+| [just](https://github.com/casey/just#installation) | Step 1 onward — thin wrapper around `docker compose` |
+| [Node.js 22](https://nodejs.org/) + npm | Only when editing `frontend/src/` (the built SPA is otherwise served by Django/Docker) |
+| [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Step 3 onward |
 
 ---
 
@@ -40,12 +74,8 @@ what the application actually does. Steps are checked off as they're written up.
 
 Before containerizing anything, get the application itself running bare-metal —
 straight `python manage.py runserver`, no Docker, no Postgres or Redis install
-required.
-
-### Prerequisites
-
-- Python 3.14
-- [uv](https://docs.astral.sh/uv/) (manages the virtualenv and dependencies)
+required. You only need Python 3.14 and uv for this step (see
+[Prerequisites](#prerequisites) above).
 
 ### Run the backend
 
