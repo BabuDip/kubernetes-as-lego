@@ -1,118 +1,80 @@
-# K8s as Lego
+# Kubernetes as LEGO: Building Platforms one block at a time
 
 [![CI](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yml/badge.svg)](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yml)
 [![Python 3.14](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![Django 6.0](https://img.shields.io/badge/django-6.0-092E20?logo=django&logoColor=white)](pyproject.toml)
 [![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](frontend/package.json)
 [![uv](https://img.shields.io/badge/managed%20by-uv-DE5FE9?logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
+[![Docker](https://img.shields.io/badge/docker-required-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/get-docker/)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-kind%20%2F%20minikube-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![kubectl](https://img.shields.io/badge/kubectl-required-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/docs/tasks/tools/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A hands-on, step-by-step path from *"a working application"* to *"that application
-running on Kubernetes"* — building up the pieces one Lego brick at a time instead of
-dropping a finished cluster manifest on day one.
+This is the companion repo (playground) for the PyCon AU 2026 talk **[Kubernetes as LEGO: Building
+Platforms one block at a time](https://2026.pycon.org.au/schedule/7JZY3E/)** — a
+hands-on walkthrough guiding you through the nitty-gritty of building a platform from a real-world business problem to global scale, with the fun analogy and simplicity of LEGO bricks.
+
+>
+> - **Level 1 — Raw primitives**: Pods, Deployments, Services, ConfigMaps etc.
+> - **Level 2 — Helm and Kustomize**: Helm for consuming and distributing packages;
+>   Kustomize for environment overlays of the apps you own.
+> - **Level 3 — Python operators with kopf**: when the built-in API can't express
+>   your domain logic, Custom Resource Definitions (CRDs) let you extend it.
+>
 
 The demo application is **[QLess Cafe](qless_cafe/README.md)**, a full order-ahead
 cafe app (Django + DRF + Channels + Celery backend, React SPA frontend, PostgreSQL,
-Redis). It's a real, non-trivial app on purpose — a "hello world" container doesn't
-exercise the things that actually make deploying to Kubernetes interesting: a
-database, background workers, WebSockets, scheduled tasks, secrets, and a build step
-for the frontend.
+Redis).
 
 See [qless_cafe/README.md](qless_cafe/README.md) for the full application
 documentation — architecture, API reference, order lifecycle, tech stack, testing,
-etc. This README only tracks the Kubernetes learning path built around it.
-
----
-
-## Tech stack
-
-| Layer | Tech |
-|-------|------|
-| Backend | Python 3.14, Django 6.0, Django REST Framework, Django Channels (WebSockets), Celery + django-celery-beat |
-| Frontend | React 19, Vite, React Router |
-| Data | PostgreSQL 18, Redis 7 |
-| Dev tooling | [uv](https://docs.astral.sh/uv/) (Python deps), npm (frontend deps), [just](https://github.com/casey/just) (task runner), Docker Compose, pre-commit, ruff, mypy, pytest, ESLint, Prettier |
-| Ops (this guide) | Docker, Kubernetes (kind/minikube), and whatever each step adds |
+etc.
 
 ---
 
 ## Prerequisites
 
-What you need on your machine depends on how far along the guide you're following:
+What you need on your machine to follow along with the talk:
 
 | Tool | Needed for |
 |------|------------|
-| [Python 3.14](https://www.python.org/downloads/) | Step 0 (bare local run) |
-| [uv](https://docs.astral.sh/uv/) | Step 0 (bare local run) — manages the virtualenv and Python deps |
-| [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Step 1 onward |
-| [just](https://github.com/casey/just#installation) | Recommended for Step 1 onward — thin wrapper around `docker compose` |
+| [Python 3.14](https://www.python.org/downloads/) | bare local run |
+| [uv](https://docs.astral.sh/uv/) | bare local run — manages the virtualenv and Python deps |
 | [Node.js 20+](https://nodejs.org/) + npm | When building/running the SPA or editing `frontend/src/`; Django/Docker serves the generated static files |
-| [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Step 3 onward |
+| [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Containerising and running containerised application |
+| [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Running Kubernetes locally |
+| [Helm](https://helm.sh/) & [Kustomize](https://kustomize.io/) | Running different Kubernetes configurations and overlays (Different Environments) |
+| [kopf](https://kopf.readthedocs.io/) (Python, installed via `uv`) | Building Custom CRDs |
 
 ---
 
-## The Plan
+## Step 1 — Run the app locally
 
-Each step below adds one new concept on top of the previous one, without changing
-what the application actually does. Steps are checked off as they're written up.
+With the help of Cookiecutter Django, the application is scaffolded quickly, which you can run locally:
 
-- [x] **Step 0 — Run the app locally.** No containers, no orchestration — just the
-      Django dev server and SQLite, to confirm what "working" looks like before any
-      infrastructure gets layered on top. *(see below)*
-- [ ] **Step 1 — Containerize.** Package the backend (and later the frontend build)
-      as Docker images.
-- [ ] **Step 2 — Local multi-container orchestration.** Run the full stack (app,
-      Postgres, Redis, Celery worker/beat) together with Docker Compose.
-- [ ] **Step 3 — Kubernetes fundamentals.** Pods, Deployments, Services — get the
-      same containers running on a local cluster (e.g. kind/minikube).
-- [ ] **Step 4 onward — TBD** as the guide progresses (config/secrets, persistent
-      storage, ingress, scaling, health checks, CI/CD, …).
+### build the frontend SPA (React) and serve it via Django
+```bash
+cd frontend # go into the frontend directory
+npm install # install dependencies
+npm run build # build the SPA into static files (served by Django)
+```
 
----
-
-## Step 0 — Run the app locally
-
-Before containerizing anything, get the application itself running bare-metal —
-straight `python manage.py runserver`, no Docker, no Postgres or Redis install
-required. You only need Python 3.14 and uv for this step (see
-[Prerequisites](#prerequisites) above).
-
-### Run the backend
-
+### run the backend (Django) locally
 ```bash
 uv sync
 export DJANGO_SETTINGS_MODULE=config.settings.local
 uv run python manage.py migrate
-uv run python manage.py seed_demo_data
+uv run python manage.py seed_demo_data # seed the database with demo data (users, menu, etc.)
 uv run python manage.py runserver
 ```
 
-With no `POSTGRES_*` environment variables set, Django automatically falls back to
-a local SQLite database (`db.sqlite3`) — see
-[qless_cafe/README.md § Bare local run](qless_cafe/README.md#bare-local-run-no-docker)
-for exactly what else gets swapped out (Celery, Channels, email) and why.
-
-`seed_demo_data` is idempotent (safe to re-run) and creates a demo catalogue plus
-two test accounts:
+Now visit <http://localhost:8000/> to see the app running locally.
+You can use the credentials below to log in as a manager or customer, seeded by the `seed_demo_data` command:
 
 | Role | Email | Password |
 |------|-------|----------|
 | Manager | `manager@qless.cafe` | `Manager-Pass-123!` |
 | Customer | `customer@qless.cafe` | `Customer-Pass-123!` |
-
-### Try it out
-
-Visit <http://localhost:8000/> and log in as the customer to browse the menu and
-place an order, or <http://localhost:8000/manage> as the manager to see it land on
-the live Kanban board.
-
-> The frontend isn't built yet at this point — `manage.py runserver` alone serves
-> API/admin routes. To see the actual UI, also build or run the SPA (see
-> [qless_cafe/README.md § Getting Started](qless_cafe/README.md#getting-started)).
-
-Once you can place an order as the customer and watch it move through the Kanban
-board as the manager, the app is confirmed working end-to-end — that's the baseline
-Step 1 will package into a container without changing.
 
 ---
 
