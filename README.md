@@ -52,14 +52,14 @@ What you need on your machine to follow along with the talk:
 
 With the help of Cookiecutter Django, the application is scaffolded quickly, so you can run it locally:
 
-### build the frontend SPA (React) and serve it via Django
+### Build the frontend SPA (React) and serve it via Django
 ```bash
 cd frontend # go into the frontend directory
 npm install # install dependencies
 npm run build # build the SPA into static files (served by Django)
 ```
 
-### run the backend (Django) locally
+### Run the backend (Django) locally
 ```bash
 uv sync
 export DJANGO_SETTINGS_MODULE=config.settings.local
