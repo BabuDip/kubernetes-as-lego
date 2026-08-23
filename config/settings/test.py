@@ -38,5 +38,15 @@ MEDIA_URL = "http://media.testserver/"
 # ------------------------------------------------------------------------------
 # In-memory layer: no live Redis dependency in tests, and it's fast.
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+# CELERY
+# ------------------------------------------------------------------------------
+# Bare local pytest (SQLite, no Redis running) has no broker for an unmocked
+# `.delay()` (e.g. via transaction.on_commit) to connect to — run those tasks
+# inline instead. The Dockerized suite has a real Redis broker available, so it
+# keeps dispatching for real, unchanged. Either way, tests that specifically
+# exercise real dispatch use the `celery_session_worker` fixture, which runs on
+# its own in-memory-broker app regardless of this setting.
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    CELERY_TASK_ALWAYS_EAGER = True
 # Your stuff...
 # ------------------------------------------------------------------------------

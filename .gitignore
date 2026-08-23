@@ -277,6 +277,9 @@ dump.rdb
 ### Project template
 qless_cafe/media/
 
+# Bare local run (no Docker/Postgres) SQLite fallback DB
+db.sqlite3
+
 .pytest_cache/
 .ipython/
 .env
