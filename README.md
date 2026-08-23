@@ -78,6 +78,39 @@ You can use the credentials below to log in as a manager or customer, seeded by 
 
 ---
 
+## Step 2 — Containerize
+
+Let's package the app into a Docker image, so we can run it anywhere (including Kubernetes).
+
+### Build the image and tag it
+
+```bash
+docker build -f Dockerfile -t qless-cafe:v1 .
+```
+
+### Run the containerised application from the image
+
+```bash
+docker run --rm -it -p 8000:8000 qless-cafe:v1 bash
+```
+
+Then, inside the container, run each command yourself:
+
+```bash
+uv run manage.py migrate
+uv run manage.py seed_demo_data
+uv run manage.py runserver 0.0.0.0:8000
+```
+
+Now visit <http://localhost:8000/> — same app, same seeded credentials as Step 1.
+
+`Ctrl+C` only stops `runserver` and drops you back to the shell prompt — the
+container is still running because `bash`, not `runserver`, is its main process.
+Type `exit` (or `Ctrl+D`) to leave the shell and actually stop the container
+(`--rm` then removes it automatically).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
