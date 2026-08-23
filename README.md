@@ -44,7 +44,7 @@ What you need on your machine to follow along with the talk:
 | [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) | Containerising and running a containerised application |
 | [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/) + `kubectl` | Running Kubernetes locally |
 | [Helm](https://helm.sh/) & [Kustomize](https://kustomize.io/) | Running different Kubernetes configurations and overlays (different environments) |
-| [kopf](https://kopf.readthedocs.io/) (Python, installed via `uv`) | Building Custom CRDs |
+| [kopf](https://kopf.readthedocs.io/) (Python, installed via `uv`) | Building operators and Custom Resource Definitions (CRDs) |
 
 ---
 
