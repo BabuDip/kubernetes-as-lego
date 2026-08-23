@@ -1,4 +1,15 @@
 
+# Build the React SPA; qless_cafe/static/spa/ is gitignored so it must be generated here.
+FROM node:22-bookworm-slim AS node-build-stage
+
+WORKDIR /app/frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
 # define an alias for the specific python version used in this file.
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-build-stage
 
@@ -72,6 +83,9 @@ RUN chmod +x /start-celerybeat
 
 # Copy the application from the builder
 COPY --from=python-build-stage --chown=django:django ${APP_HOME} ${APP_HOME}
+
+# Copy the built SPA over the (empty) gitignored static/spa directory
+COPY --from=node-build-stage --chown=django:django /app/qless_cafe/static/spa ${APP_HOME}/qless_cafe/static/spa
 
 # make django owner of the WORKDIR directory as well.
 RUN chown django:django ${APP_HOME}

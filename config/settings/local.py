@@ -25,12 +25,22 @@ CACHES = {
     },
 }
 
+# Docker-specific configuration
+# ------------------------------------------------------------------------------
+# Only set (to "yes") by .envs/.local/.django, which is only loaded when running
+# through docker compose — bare `manage.py`/`uvicorn` runs never set it.
+USE_DOCKER = env.bool("USE_DOCKER", default=False)
+
 # EMAIL
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#email-host
-EMAIL_HOST = env("EMAIL_HOST", default="mailpit")
-# https://docs.djangoproject.com/en/dev/ref/settings/#email-port
-EMAIL_PORT = 1025
+if USE_DOCKER:
+    # https://docs.djangoproject.com/en/dev/ref/settings/#email-host
+    EMAIL_HOST = env("EMAIL_HOST", default="mailpit")
+    # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
+    EMAIL_PORT = 1025
+else:
+    # Bare local run: no Mailpit container to talk to, print emails to the console.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # django-debug-toolbar
 # ------------------------------------------------------------------------------
@@ -50,7 +60,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
 INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
-if env("USE_DOCKER") == "yes":
+if USE_DOCKER:
     import socket
 
     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
@@ -60,6 +70,15 @@ if env("USE_DOCKER") == "yes":
 # ------------------------------------------------------------------------------
 # https://django-extensions.readthedocs.io/en/latest/installation_instructions.html#configuration
 INSTALLED_APPS += ["django_extensions"]
+
+if not USE_DOCKER:
+    # Bare local run: no Redis container for Channels/Celery — use in-process
+    # equivalents so `manage.py`/`uvicorn` work with zero external services.
+    # https://channels.readthedocs.io/en/stable/topics/channel_layers.html#in-memory-channel-layer
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+    # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-always-eager
+    CELERY_TASK_ALWAYS_EAGER = True
+
 # Celery
 # ------------------------------------------------------------------------------
 

@@ -2,8 +2,8 @@ import uuid
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import connection
 from django.db import models
-from django.db.models.expressions import RawSQL
 from django.utils import timezone
 
 from qless_cafe.catalog.models import Product
@@ -11,6 +11,22 @@ from qless_cafe.catalog.models import Product
 # Aging-bar thresholds (minutes) for Order.age_level.
 _AGE_WARN_MINUTES = 4
 _AGE_LATE_MINUTES = 8
+
+
+def _next_order_number() -> int:
+    """Race-free order number.
+
+    On Postgres this reads the real `orders_order_number_seq` sequence (atomic at
+    the DB level, so concurrent checkouts never collide). SQLite has no sequence
+    object, so bare local runs fall back to a plain max()+1 — fine for a single
+    local dev process, not a guarantee under real concurrency.
+    """
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT nextval('orders_order_number_seq')")
+            return cursor.fetchone()[0]
+    last = Order.objects.aggregate(models.Max("order_number"))["order_number__max"]
+    return (last or 0) + 1
 
 
 class Order(models.Model):
@@ -27,12 +43,11 @@ class Order(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
     # Sequential, human-readable order number for staff/customers to read out loud;
-    # the UUID id above is for system/URL integrity only. Backed by a real Postgres
-    # sequence (see migration) so concurrent checkouts never collide or race.
+    # the UUID id above is for system/URL integrity only. See _next_order_number().
     order_number = models.PositiveIntegerField(
         unique=True,
         editable=False,
-        db_default=RawSQL("nextval('orders_order_number_seq')", []),
+        default=_next_order_number,
     )
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,

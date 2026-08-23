@@ -1,9 +1,10 @@
 # AGENTS.md
 
 Instructions for AI coding agents working in this repository. Humans: see
-[README.md](README.md) for the full project write-up (architecture, API reference,
-order lifecycle, etc.) — this file only covers what an agent needs to work safely
-and productively.
+[README.md](README.md) for the Kubernetes learning-path guide, and
+[qless_cafe/README.md](qless_cafe/README.md) for the application write-up
+(architecture, API reference, order lifecycle, etc.) — this file only covers what
+an agent needs to work safely and productively.
 
 ## Stack
 
@@ -12,7 +13,10 @@ and productively.
   `uv` (`pyproject.toml` / `uv.lock`).
 - Frontend: React 19 + Vite, plain JSX (no TypeScript), React Router. `frontend/`
   is a separate npm project.
-- Everything runs in Docker Compose; there is no supported bare-metal local setup.
+- Everything runs in Docker Compose by default. A bare local run (no containers,
+  SQLite instead of Postgres, in-memory Channels layer, eager Celery, console
+  email) is also supported for quick iteration — see
+  [qless_cafe/README.md § Bare local run](qless_cafe/README.md#bare-local-run-no-docker).
 
 ## Running things
 

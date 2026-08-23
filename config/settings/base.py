@@ -44,9 +44,10 @@ USE_TZ = True
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
-if os.getenv("DATABASE_URL", default=None):
-    DATABASES = {"default": env.db("DATABASE_URL")}
-else:
+# Try individual POSTGRES_* env vars (set by .envs/.local/.postgres under Docker).
+# Bare local run with no Postgres available falls back to SQLite so `manage.py`
+# works with zero setup.
+try:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -55,6 +56,17 @@ else:
             "PASSWORD": env.str("POSTGRES_PASSWORD"),
             "HOST": env.str("POSTGRES_HOST", default="postgres"),
             "PORT": env.str("POSTGRES_PORT", default="5432"),
+        },
+    }
+except environ.ImproperlyConfigured:
+    # Never silently swap to an ephemeral SQLite DB in production: a missing
+    # POSTGRES_* var there is a misconfiguration that must fail fast.
+    if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.production":
+        raise
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         },
     }
 
