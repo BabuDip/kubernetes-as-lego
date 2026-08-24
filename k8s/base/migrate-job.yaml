@@ -1,0 +1,41 @@
+# Run migrations before rolling out a new django-deployment.yaml image.
+# Re-applying this manifest with the same name is a no-op once Complete;
+# CI/CD gives each release a unique name (see overlays/*/kustomization.yaml).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  labels:
+    app: migrate
+    component: database-migration
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: migrate
+        component: database-migration
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
+      containers:
+        - name: migrate
+          image: qless-cafe
+          imagePullPolicy: IfNotPresent
+          command: ["uv", "run", "manage.py", "migrate", "--noinput"]
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

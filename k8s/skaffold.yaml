@@ -1,0 +1,27 @@
+# Renders/deploys the kustomize overlays. `build` is intentionally empty —
+# Cloud Build produces and pushes the image (see cloudbuild.yaml); Skaffold
+# here only takes care of manifest rendering + apply via Cloud Deploy.
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: qless-cafe
+
+manifests:
+  kustomize:
+    paths:
+      - overlays/uat
+
+profiles:
+  - name: uat
+    manifests:
+      kustomize:
+        paths:
+          - overlays/uat
+  - name: prod
+    manifests:
+      kustomize:
+        paths:
+          - overlays/prod
+
+deploy:
+  kubectl: {}

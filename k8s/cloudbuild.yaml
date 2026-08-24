@@ -1,0 +1,56 @@
+# Triggered on push to main: lint + test, build/push the same Dockerfile used
+# in Step 2/4, then create a Cloud Deploy release that rolls out to UAT
+# (prod is a manual promotion in the Cloud Deploy pipeline, not this file).
+substitutions:
+  _ARTIFACT_REGISTRY: "australia-southeast1-docker.pkg.dev/PROJECT_ID/qless-cafe" # TODO: replace PROJECT_ID
+  _IMAGE_NAME: "qless-cafe"
+  _DELIVERY_PIPELINE: "qless-cafe-pipeline"
+  _REGION: "australia-southeast1"
+
+steps:
+  - id: install-deps
+    name: "ghcr.io/astral-sh/uv:python3.14-bookworm-slim"
+    entrypoint: bash
+    args: ["-c", "uv sync --locked"]
+
+  - id: lint
+    name: "ghcr.io/astral-sh/uv:python3.14-bookworm-slim"
+    entrypoint: bash
+    args: ["-c", "uv run ruff check . && uv run ruff format --check . && uv run mypy qless_cafe"]
+    waitFor: ["install-deps"]
+
+  - id: test
+    name: "ghcr.io/astral-sh/uv:python3.14-bookworm-slim"
+    entrypoint: bash
+    args: ["-c", "uv run pytest"]
+    waitFor: ["install-deps"]
+
+  - id: build-image
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - -t=$_ARTIFACT_REGISTRY/$_IMAGE_NAME:$SHORT_SHA
+      - -f=Dockerfile
+      - .
+    waitFor: ["lint", "test"]
+
+  - id: push-image
+    name: "gcr.io/cloud-builders/docker"
+    args: ["push", "$_ARTIFACT_REGISTRY/$_IMAGE_NAME:$SHORT_SHA"]
+    waitFor: ["build-image"]
+
+  - id: create-release
+    name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud deploy releases create "release-$SHORT_SHA" \
+          --delivery-pipeline="$_DELIVERY_PIPELINE" \
+          --region="$_REGION" \
+          --source=k8s \
+          --images="$_IMAGE_NAME=$_ARTIFACT_REGISTRY/$_IMAGE_NAME:$SHORT_SHA"
+    waitFor: ["push-image"]
+
+options:
+  logging: CLOUD_LOGGING_ONLY

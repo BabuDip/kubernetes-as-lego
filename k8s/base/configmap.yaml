@@ -1,0 +1,13 @@
+# Non-secret settings shared by every container that runs Django code.
+# Service names (postgres, redis) resolve via in-cluster DNS — identical on
+# minikube and GKE, no cloud-managed database/broker involved.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qless-cafe-config
+data:
+  DJANGO_SETTINGS_MODULE: config.settings.local
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: qless_cafe
+  REDIS_URL: redis://redis:6379/0

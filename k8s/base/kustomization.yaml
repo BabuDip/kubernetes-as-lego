@@ -1,0 +1,26 @@
+# Kustomize base for QLess Cafe — resources common to every environment.
+# Environment-specific bits (namespace, image tag, Ingress host, secrets) live
+# in overlays/{uat,prod}.
+#
+# Usage:
+#   kubectl apply -k k8s/overlays/uat
+#   kubectl apply -k k8s/overlays/prod
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app: qless-cafe
+      managed-by: kustomize
+
+resources:
+  - configmap.yaml
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
+  - django-deployment.yaml
+  - django-service.yaml
+  - celery-worker-deployment.yaml
+  - celery-beat-deployment.yaml
+  - migrate-job.yaml

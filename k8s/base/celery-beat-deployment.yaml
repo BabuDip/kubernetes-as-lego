@@ -1,0 +1,44 @@
+# Must stay at exactly 1 replica — two beat schedulers would double-fire
+# every periodic task. No HPA, unlike django/celery-worker.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  labels:
+    app: celery-beat
+    component: task-scheduler
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: celery-beat
+      component: task-scheduler
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+        component: task-scheduler
+    spec:
+      initContainers:
+        - name: wait-for-migrate
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
+      containers:
+        - name: celery-beat
+          image: qless-cafe
+          imagePullPolicy: IfNotPresent
+          command: ["uv", "run", "celery", "-A", "config.celery_app", "beat", "-l", "INFO"]
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
