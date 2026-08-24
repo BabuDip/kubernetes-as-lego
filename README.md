@@ -169,6 +169,83 @@ kubectl delete -f k8s/pod.yaml   # tear the Pod down when you're done
 
 ---
 
+## Step 5 — Deployments, environments, and kustomize overlays
+
+A **Deployment** manages a Pod for you: self-healing, replicas, rolling
+updates. [k8s/base](k8s/base) defines one for the whole app (django,
+celery-worker, celery-beat, a postgres StatefulSet, redis, a migrate Job).
+[k8s/overlays/uat](k8s/overlays/uat) and [k8s/overlays/prod](k8s/overlays/prod)
+layer environment-specific bits on top with kustomize — namespace, replica
+counts, Ingress host — so uat and prod run side by side as two isolated
+namespaces on the same cluster.
+
+### Get the image in shape
+
+The overlays reference `qless-cafe` with no tag, i.e. `:latest`:
+
+```bash
+docker tag qless-cafe:v1 qless-cafe:latest
+minikube image load qless-cafe:latest
+```
+
+### Provide secrets
+
+Each overlay needs a `secrets.env` (git-ignored — never commit real secrets):
+
+```bash
+cp k8s/overlays/uat/secrets.env.example k8s/overlays/uat/secrets.env
+cp k8s/overlays/prod/secrets.env.example k8s/overlays/prod/secrets.env
+# edit both with real values
+```
+
+### Deploy both environments
+
+```bash
+kubectl apply -k k8s/overlays/uat
+kubectl apply -k k8s/overlays/prod
+kubectl get pods -n qless-cafe-uat
+kubectl get pods -n qless-cafe-prod
+```
+
+Seed each once its `django` Deployment is `Running` (the `migrate` Job already
+ran as part of `apply -k`):
+
+```bash
+kubectl -n qless-cafe-uat exec deploy/django -- uv run manage.py seed_demo_data
+kubectl -n qless-cafe-prod exec deploy/django -- uv run manage.py seed_demo_data
+```
+
+### View them in the browser
+
+Port-forward each namespace's `django` Service to a different local port to
+compare uat and prod side by side:
+
+```bash
+kubectl -n qless-cafe-uat port-forward svc/django 8001:8000 &
+kubectl -n qless-cafe-prod port-forward svc/django 8002:8000 &
+```
+
+Visit <http://localhost:8001/> (uat) and <http://localhost:8002/> (prod).
+
+To go through the Ingress instead (closer to how GKE routes it), enable the
+addon, run `minikube tunnel` in its own terminal, and point the hostnames at
+it:
+
+```bash
+minikube addons enable ingress
+minikube tunnel   # separate terminal, stays running, needs sudo
+echo "127.0.0.1 uat.qless.cafe qless.cafe" | sudo tee -a /etc/hosts
+```
+
+Then visit <http://uat.qless.cafe/> and <http://qless.cafe/>.
+
+```bash
+kubectl delete -k k8s/overlays/uat    # tear an environment down when you're done
+kubectl delete -k k8s/overlays/prod
+```
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

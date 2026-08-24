@@ -7,6 +7,10 @@ metadata:
   name: qless-cafe-config
 data:
   DJANGO_SETTINGS_MODULE: config.settings.local
+  # Without this, config.settings.local's `if not USE_DOCKER:` block forces an
+  # in-memory Channel layer and CELERY_TASK_ALWAYS_EAGER=True, silently
+  # bypassing the redis/celery-worker Deployments entirely.
+  USE_DOCKER: "yes"
   POSTGRES_HOST: postgres
   POSTGRES_PORT: "5432"
   POSTGRES_DB: qless_cafe
