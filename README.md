@@ -125,7 +125,7 @@ docker info --format '{{.NCPU}} CPUs / {{.MemTotal}} bytes memory'
 ```
 
 ### Start the cluster
-Now based on the resource you got, start kubernetes with Minikube. 
+Now based on the resource you got, start kubernetes with Minikube.
 ```bash
 minikube start --nodes=3 --cpus=6 --memory=2200mb --driver=docker
 
@@ -150,7 +150,7 @@ minikube start --nodes=3 --cpus=6 --memory=2200mb --driver=docker
 # 🐳  Preparing Kubernetes v1.35.1 on Docker 29.2.1 ...
 #     ▪ env NO_PROXY=192.168.49.2
 # 🔎  Verifying Kubernetes components...
-# 
+#
 # 👍  Starting "minikube-m03" worker node in "minikube" cluster
 # 🚜  Pulling base image v0.0.50 ...
 # 🔥  Creating docker container (CPUs=6, Memory=2200MB) ...

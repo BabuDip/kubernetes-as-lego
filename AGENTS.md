@@ -39,6 +39,26 @@ npm run build   # one-shot build into ../qless_cafe/static/spa/ (this build outp
 npm run dev     # live reload at :5173, proxies /api and /ws to the Django container on :8000
 ```
 
+## Before every commit (mandatory, no exceptions)
+
+CI runs `pre-commit` across **every file in the repo** on every PR — docs-only,
+YAML-only, and markdown-only changes are not exempt (README.md whitespace has
+broken CI before). Strict adherence to this project's policy means running
+this locally before every commit, not just before "code" changes:
+
+```bash
+uv run pre-commit run --show-diff-on-failure --color=always --all-files
+```
+
+- If it reports "files were modified by this hook", that is not optional
+  cleanup — `git add` the modified files and re-run the command until it is
+  fully green, *then* commit.
+- Never commit or push while a pre-commit run is still reporting failures or
+  unstaged hook-modified files. A dirty/red pre-commit run is the single most
+  common avoidable CI failure in this repo — do not rely on CI to catch it.
+- This applies in addition to (not instead of) the backend-specific checks
+  below when the change touches backend code.
+
 ## Checks to run before considering backend work done
 
 ```bash
