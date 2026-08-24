@@ -113,109 +113,54 @@ Type `exit` (or `Ctrl+D`) to leave the shell and actually stop the container
 
 ## Step 3 — Start a local Kubernetes cluster (minikube)
 
-A Kubernetes cluster is a pool of machines (**nodes**) glued together by a
-control plane. minikube simulates that whole cluster on your laptop, with
-each "node" being a container (the `docker` driver, used below) or a VM.
+minikube runs a Kubernetes cluster locally, with each node as a Docker
+container (the `docker` driver).
 
-### check your machine's Docker resources
+Check what Docker Desktop has to offer, then size `--cpus`/`--memory` per
+node to fit — e.g. on an 18-CPU/8GB machine, 3 nodes at 6 CPUs/2200MB each
+fits comfortably:
 
 ```bash
 docker info --format '{{.NCPU}} CPUs / {{.MemTotal}} bytes memory'
-# 18 CPUs / 8319410176 bytes memory
-```
-
-### Start the cluster
-Now based on the resource you got, start kubernetes with Minikube.
-```bash
 minikube start --nodes=3 --cpus=6 --memory=2200mb --driver=docker
-
-# 😄  minikube v1.38.1 on Darwin 26.6.2 (arm64)
-# ✨  Using the docker driver based on user configuration
-# ❗  Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.
-# 📌  Using Docker Desktop driver with root privileges
-# 👍  Starting "minikube" primary control-plane node in "minikube" cluster
-# 🚜  Pulling base image v0.0.50 ...
-# 🔥  Creating docker container (CPUs=6, Memory=2200MB) ...
-# 🐳  Preparing Kubernetes v1.35.1 on Docker 29.2.1 ...
-# 🔗  Configuring CNI (Container Networking Interface) ...
-# 🔎  Verifying Kubernetes components...
-#    ▪ Using image gcr.io/k8s-minikube/storage-provisioner:v5
-# 🌟  Enabled addons: storage-provisioner, default-storageclass
-#
-# 👍  Starting "minikube-m02" worker node in "minikube" cluster
-# 🚜  Pulling base image v0.0.50 ...
-# 🔥  Creating docker container (CPUs=6, Memory=2200MB) ...
-# 🌐  Found network options:
-#     ▪ NO_PROXY=192.168.49.2
-# 🐳  Preparing Kubernetes v1.35.1 on Docker 29.2.1 ...
-#     ▪ env NO_PROXY=192.168.49.2
-# 🔎  Verifying Kubernetes components...
-#
-# 👍  Starting "minikube-m03" worker node in "minikube" cluster
-# 🚜  Pulling base image v0.0.50 ...
-# 🔥  Creating docker container (CPUs=6, Memory=2200MB) ...
-# 🌐  Found network options:
-#     ▪ NO_PROXY=192.168.49.2,192.168.49.3
-# 🐳  Preparing Kubernetes v1.35.1 on Docker 29.2.1 ...
-#    ▪ env NO_PROXY=192.168.49.2
-#    ▪ env NO_PROXY=192.168.49.2,192.168.49.3
-# 🔎  Verifying Kubernetes components...
-# 🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default
-```
-
-Check the nodes are up and running:
-```bash
-kubectl get nodes -o wide
-# NAME           STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION     CONTAINER-RUNTIME
-# minikube       Ready    control-plane   9m56s   v1.35.1   192.168.49.2   <none>        Debian GNU/Linux12 (bookworm)   6.12.76-linuxkit   docker://29.2.1
-# minikube-m02   Ready    <none>          9m39s   v1.35.1   192.168.49.3   <none>        Debian GNU/Linux12 (bookworm)   6.12.76-linuxkit   docker://29.2.1
-# minikube-m03   Ready    <none>          9m26s   v1.35.1   192.168.49.4   <none>        Debian GNU/Linux12 (bookworm)   6.12.76-linuxkit   docker://29.2.1
+kubectl get nodes   # all 3 should show STATUS Ready
 ```
 
 ## Step 4 — Define and run your first Pod
 
-A **Pod** is the smallest deployable unit in Kubernetes.
+A **Pod** is the smallest deployable unit in Kubernetes — one or more
+containers scheduled together onto a node.
 
-### Get the image into the cluster
-
-The `docker` driver's nodes have their own separate image store, so the
-`qless-cafe:v1` image built in Step 2 isn't visible to them yet:
+The `docker` driver's nodes don't share your local image store, so the
+`qless-cafe:v1` image from Step 2 needs loading in explicitly:
 
 ```bash
 minikube image load qless-cafe:v1
 ```
 
-### Define the Pod
-
-See [k8s/pod.yaml](k8s/pod.yaml) — one container running the same image and
-command as Step 2's `docker run`, using SQLite (no `POSTGRES_*` env vars) so
-it needs nothing else in the cluster to boot.
-
-### Deploy it
+[k8s/pod.yaml](k8s/pod.yaml) runs the same image and command as Step 2's
+`docker run`, using SQLite so it needs nothing else in the cluster:
 
 ```bash
 kubectl apply -f k8s/pod.yaml
-kubectl get pods -o wide      # STATUS should reach Running, NODE shows where it landed
+kubectl get pods -o wide   # STATUS should reach Running
 ```
 
-Just like Step 2, the container needs migrating and seeding before it's
-useful:
+Migrate and seed it, same as Step 2:
 
 ```bash
 kubectl exec qless-cafe -- uv run manage.py migrate
 kubectl exec qless-cafe -- uv run manage.py seed_demo_data
 ```
 
-Then forward a local port to the Pod and visit it:
+Forward a port and visit it:
 
 ```bash
 kubectl port-forward pod/qless-cafe 8000:8000
 ```
 
 Now visit <http://localhost:8000/> — same app, same seeded credentials as
-Step 1 and Step 2. `Ctrl+C` stops the port-forward (and, unlike Step 2's
-`bash` shell, doesn't touch the Pod itself — it's still `Running` in the
-cluster).
+Step 1 and Step 2.
 
 ```bash
 kubectl logs qless-cafe          # see the runserver output

@@ -1,9 +1,7 @@
-# Level 1 — Raw primitives: a single Pod.
-#
-# The smallest deployable unit in Kubernetes: one (or more) containers that
-# share a network namespace and storage, scheduled together onto one node.
-# No self-healing, no scaling, no rolling updates yet — that's what
-# Deployments (the next lesson) add on top of this.
+# Level 1 primitive: a single Pod — one or more containers sharing a network
+# namespace and storage, scheduled together onto one node. No scaling,
+# rolling updates, or controller-managed rescheduling yet — that's what a
+# Deployment adds.
 apiVersion: v1
 kind: Pod
 metadata:
