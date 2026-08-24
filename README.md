@@ -111,6 +111,64 @@ Type `exit` (or `Ctrl+D`) to leave the shell and actually stop the container
 
 ---
 
+## Step 3 — Start a local Kubernetes cluster (minikube)
+
+minikube runs a Kubernetes cluster locally, with each node as a Docker
+container (the `docker` driver).
+
+Check what Docker Desktop has to offer, then size `--cpus`/`--memory` per
+node to fit — e.g. on an 18-CPU/8GB machine, 3 nodes at 6 CPUs/2200MB each
+fits comfortably:
+
+```bash
+docker info --format '{{.NCPU}} CPUs / {{.MemTotal}} bytes memory'
+minikube start --nodes=3 --cpus=6 --memory=2200mb --driver=docker
+kubectl get nodes   # all 3 should show STATUS Ready
+```
+
+## Step 4 — Define and run your first Pod
+
+A **Pod** is the smallest deployable unit in Kubernetes — one or more
+containers scheduled together onto a node.
+
+The `docker` driver's nodes don't share your local image store, so the
+`qless-cafe:v1` image from Step 2 needs loading in explicitly:
+
+```bash
+minikube image load qless-cafe:v1
+```
+
+[k8s/pod.yaml](k8s/pod.yaml) runs the same image and command as Step 2's
+`docker run`, using SQLite so it needs nothing else in the cluster:
+
+```bash
+kubectl apply -f k8s/pod.yaml
+kubectl get pods -o wide   # STATUS should reach Running
+```
+
+Migrate and seed it, same as Step 2:
+
+```bash
+kubectl exec qless-cafe -- uv run manage.py migrate
+kubectl exec qless-cafe -- uv run manage.py seed_demo_data
+```
+
+Forward a port and visit it:
+
+```bash
+kubectl port-forward pod/qless-cafe 8000:8000
+```
+
+Now visit <http://localhost:8000/> — same app, same seeded credentials as
+Step 1 and Step 2.
+
+```bash
+kubectl logs qless-cafe          # see the runserver output
+kubectl delete -f k8s/pod.yaml   # tear the Pod down when you're done
+```
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

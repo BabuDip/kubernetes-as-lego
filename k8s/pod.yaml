@@ -1,0 +1,30 @@
+# Level 1 primitive: a single Pod — one or more containers sharing a network
+# namespace and storage, scheduled together onto one node. No scaling,
+# rolling updates, or controller-managed rescheduling yet — that's what a
+# Deployment adds.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qless-cafe
+  labels:
+    app: qless-cafe
+spec:
+  containers:
+    - name: qless-cafe
+      image: qless-cafe:v1
+      imagePullPolicy: Never # image was loaded straight into minikube, don't try to pull it
+      command: ["uv", "run", "manage.py", "runserver", "0.0.0.0:8000"]
+      ports:
+        - containerPort: 8000
+      env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: config.settings.local
+        # No POSTGRES_*/REDIS_* env vars: Django falls back to SQLite and
+        # local memory caching, so this Pod is fully self-contained.
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
