@@ -6,6 +6,12 @@ kind: ConfigMap
 metadata:
   name: qless-cafe-config
 data:
+  # Deliberately config.settings.local, not .production: production.py
+  # requires a real GCS bucket + Cloud SQL, which this demo has neither of.
+  # Known trade-offs of that choice: DEBUG=True and LocMemCache (fine here —
+  # nothing in qless_cafe uses the Django cache, so per-pod LocMemCache
+  # doesn't cause cross-replica inconsistency in the prod overlay's 2 django
+  # replicas).
   DJANGO_SETTINGS_MODULE: config.settings.local
   # Without this, config.settings.local's `if not USE_DOCKER:` block forces an
   # in-memory Channel layer and CELERY_TASK_ALWAYS_EAGER=True, silently

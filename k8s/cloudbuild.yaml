@@ -2,7 +2,11 @@
 # in Step 2/4, then create a Cloud Deploy release that rolls out to UAT
 # (prod is a manual promotion in the Cloud Deploy pipeline, not this file).
 substitutions:
-  _ARTIFACT_REGISTRY: "australia-southeast1-docker.pkg.dev/PROJECT_ID/qless-cafe" # TODO: replace PROJECT_ID
+  # $PROJECT_ID is a Cloud Build built-in — only expanded in step fields
+  # (args/env/etc.), never inside another substitution's value here, so the
+  # registry path is assembled in each step below instead of baked in above.
+  _ARTIFACT_REGISTRY: "australia-southeast1-docker.pkg.dev"
+  _REPO: "qless-cafe"
   _IMAGE_NAME: "qless-cafe"
   _DELIVERY_PIPELINE: "qless-cafe-pipeline"
   _REGION: "australia-southeast1"
@@ -29,14 +33,14 @@ steps:
     name: "gcr.io/cloud-builders/docker"
     args:
       - build
-      - -t=$_ARTIFACT_REGISTRY/$_IMAGE_NAME:$SHORT_SHA
+      - -t=$_ARTIFACT_REGISTRY/$PROJECT_ID/$_REPO/$_IMAGE_NAME:$SHORT_SHA
       - -f=Dockerfile
       - .
     waitFor: ["lint", "test"]
 
   - id: push-image
     name: "gcr.io/cloud-builders/docker"
-    args: ["push", "$_ARTIFACT_REGISTRY/$_IMAGE_NAME:$SHORT_SHA"]
+    args: ["push", "$_ARTIFACT_REGISTRY/$PROJECT_ID/$_REPO/$_IMAGE_NAME:$SHORT_SHA"]
     waitFor: ["build-image"]
 
   - id: create-release
@@ -49,7 +53,7 @@ steps:
           --delivery-pipeline="$_DELIVERY_PIPELINE" \
           --region="$_REGION" \
           --source=k8s \
-          --images="$_IMAGE_NAME=$_ARTIFACT_REGISTRY/$_IMAGE_NAME:$SHORT_SHA"
+          --images="$_IMAGE_NAME=$_ARTIFACT_REGISTRY/$PROJECT_ID/$_REPO/$_IMAGE_NAME:$SHORT_SHA"
     waitFor: ["push-image"]
 
 options:
