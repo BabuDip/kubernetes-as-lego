@@ -24,3 +24,13 @@ secretGenerator:
   - name: qless-cafe-secrets
     envs:
       - secrets.env
+
+# The Ingress host isn't in config.settings.local's default ALLOWED_HOSTS.
+patches:
+  - target:
+      kind: ConfigMap
+      name: qless-cafe-config
+    patch: |-
+      - op: add
+        path: /data/DJANGO_ALLOWED_HOSTS
+        value: uat.qless.cafe,localhost,127.0.0.1

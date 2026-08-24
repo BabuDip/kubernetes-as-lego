@@ -116,15 +116,22 @@ Type `exit` (or `Ctrl+D`) to leave the shell and actually stop the container
 minikube runs a Kubernetes cluster locally, with each node as a Docker
 container (the `docker` driver).
 
-Check what Docker Desktop has to offer, then size `--cpus`/`--memory` per
-node to fit — e.g. on an 18-CPU/8GB machine, 3 nodes at 6 CPUs/2200MB each
-fits comfortably:
+Check what Docker Desktop has to offer, then size `--cpus`/`--memory` to fit.
+Publishing ports 80/443 at start time means the Ingress in Step 5 is reachable
+directly on `localhost` later, with no `minikube tunnel` or `kubectl
+port-forward` needed — on the `docker` driver that only works cleanly with a
+single node, since every extra node would try to bind those same host ports:
 
 ```bash
 docker info --format '{{.NCPU}} CPUs / {{.MemTotal}} bytes memory'
-minikube start --nodes=3 --cpus=6 --memory=2200mb --driver=docker
-kubectl get nodes   # all 3 should show STATUS Ready
+minikube start --cpus=6 --memory=4000mb --driver=docker --ports=80:80 --ports=443:443
+minikube addons enable ingress
+kubectl get nodes   # should show STATUS Ready
 ```
+
+(Curious how far this scales? `minikube start --nodes=N` spins up a genuine
+multi-node cluster — just drop `--ports` for that, since node scheduling
+across several nodes isn't the focus of the browser demo in Step 5.)
 
 ## Step 4 — Define and run your first Pod
 
@@ -177,7 +184,7 @@ celery-worker, celery-beat, a postgres StatefulSet, redis, a migrate Job).
 [k8s/overlays/uat](k8s/overlays/uat) and [k8s/overlays/prod](k8s/overlays/prod)
 layer environment-specific bits on top with kustomize — namespace, replica
 counts, Ingress host — so uat and prod run side by side as two isolated
-namespaces on the same cluster.
+namespaces on the same cluster, each reachable by its own hostname.
 
 ### Get the image in shape
 
@@ -198,6 +205,25 @@ cp k8s/overlays/prod/secrets.env.example k8s/overlays/prod/secrets.env
 # edit both with real values
 ```
 
+### Map the Ingress hostnames to localhost
+
+Each overlay's Ingress routes on a hostname (`uat.qless.cafe` / `qless.cafe`),
+so the browser needs to resolve them to your machine:
+
+```bash
+sudo sh -c 'cat >> /etc/hosts << EOF
+
+# QLess Cafe local development (k8s-as-lego)
+127.0.0.1  qless.cafe
+127.0.0.1  uat.qless.cafe
+EOF'
+```
+
+`config.settings.local`'s default `ALLOWED_HOSTS` is `localhost`/`127.0.0.1`
+only — the overlays patch in `qless.cafe`/`uat.qless.cafe` via
+`DJANGO_ALLOWED_HOSTS` (see `k8s/overlays/*/kustomization.yaml`), so this
+works without touching app code further.
+
 ### Deploy both environments
 
 ```bash
@@ -217,27 +243,11 @@ kubectl -n qless-cafe-prod exec deploy/django -- uv run manage.py seed_demo_data
 
 ### View them in the browser
 
-Port-forward each namespace's `django` Service to a different local port to
-compare uat and prod side by side:
+Because the cluster published ports 80/443 in Step 3, both Ingresses are
+already reachable — no `minikube tunnel`, no `kubectl port-forward`, nothing
+else to run:
 
-```bash
-kubectl -n qless-cafe-uat port-forward svc/django 8001:8000 &
-kubectl -n qless-cafe-prod port-forward svc/django 8002:8000 &
-```
-
-Visit <http://localhost:8001/> (uat) and <http://localhost:8002/> (prod).
-
-To go through the Ingress instead (closer to how GKE routes it), enable the
-addon, run `minikube tunnel` in its own terminal, and point the hostnames at
-it:
-
-```bash
-minikube addons enable ingress
-minikube tunnel   # separate terminal, stays running, needs sudo
-echo "127.0.0.1 uat.qless.cafe qless.cafe" | sudo tee -a /etc/hosts
-```
-
-Then visit <http://uat.qless.cafe/> and <http://qless.cafe/>.
+Visit <http://uat.qless.cafe/> and <http://qless.cafe/> side by side.
 
 ```bash
 kubectl delete -k k8s/overlays/uat    # tear an environment down when you're done
