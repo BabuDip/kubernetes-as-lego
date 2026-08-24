@@ -285,3 +285,6 @@ db.sqlite3
 .env
 .envs/*
 !.envs/.local/
+
+# Real secrets for kustomize secretGenerator; commit only *.example templates.
+k8s/overlays/*/secrets.env

@@ -1,0 +1,57 @@
+# Same image as django-deployment.yaml, running the worker command instead —
+# the whole point of a shared image is that "what runs" is just the container
+# command, not a separate build.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  labels:
+    app: celery-worker
+    component: task-queue
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: celery-worker
+      component: task-queue
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+        component: task-queue
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
+      containers:
+        - name: celery-worker
+          image: qless-cafe
+          imagePullPolicy: IfNotPresent
+          command: ["uv", "run", "celery", "-A", "config.celery_app", "worker", "-l", "INFO", "--concurrency=2"]
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - uv run celery -A config.celery_app inspect ping -d "celery@$HOSTNAME" | grep -q OK
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

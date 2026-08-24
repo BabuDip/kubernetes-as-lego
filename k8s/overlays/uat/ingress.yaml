@@ -1,0 +1,22 @@
+# Portable Ingress (ingressClassName: nginx) — works the same way locally
+# (`minikube addons enable ingress`) and on GKE (ingress-nginx installed the
+# same way), unlike GKE's native `gce` Ingress class + ManagedCertificate.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qless-cafe
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: uat.qless.cafe
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: django
+                port:
+                  number: 8000
