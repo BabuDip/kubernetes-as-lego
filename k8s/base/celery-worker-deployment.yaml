@@ -42,9 +42,9 @@ spec:
           livenessProbe:
             exec:
               command:
-                - bash
+                - sh
                 - -c
-                - celery -A config.celery_app inspect ping -d celery@$HOSTNAME | grep -q OK
+                - uv run celery -A config.celery_app inspect ping -d "celery@$HOSTNAME" | grep -q OK
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 10
