@@ -1,0 +1,29 @@
+# Configures the GCE health check that the GKE Ingress (overlays/prod) uses
+# for the django backend — without this, ingress-gce derives a health check
+# from the Service's port alone (path "/", no Host header), and Django's
+# ALLOWED_HOSTS rejects it (400 DisallowedHost) as a permanent UNHEALTHY
+# backend. Attached to django-service.yaml via the
+# cloud.google.com/backend-config annotation (see overlays/prod/kustomization.yaml).
+# https://cloud.google.com/kubernetes-engine/docs/how-to/configure-backendconfig
+# https://cloud.google.com/kubernetes-engine/docs/concepts/ingress#health_checks
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: django-backendconfig
+  labels:
+    app: django
+    component: web
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /healthcheck/
+    port: 8000
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    # Note: BackendConfig has no Host-header field. The GCE health check
+    # instead inherits the Host header from django-deployment.yaml's own
+    # readinessProbe httpHeaders — overlays/prod patches that to the real
+    # domain so both kubelet's probe and the GCE health check pass
+    # config.settings.production's ALLOWED_HOSTS check.

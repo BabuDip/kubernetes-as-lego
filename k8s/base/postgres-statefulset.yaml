@@ -63,6 +63,11 @@ spec:
         name: postgres-data
       spec:
         accessModes: ["ReadWriteOnce"]
+        # GKE's default StorageClass (Persistent Disk, balanced/pd-balanced) —
+        # explicit here rather than relying on the cluster default so this
+        # manifest stays self-documenting.
+        # https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/gce-pd-csi-driver
+        storageClassName: standard-rwo
         resources:
           requests:
-            storage: 1Gi
+            storage: 10Gi

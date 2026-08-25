@@ -1,33 +1,44 @@
 # Deploy: kubectl apply -k k8s/overlays/prod
 # Needs k8s/overlays/prod/secrets.env first — copy secrets.env.example and
 # fill in real values (this file is git-ignored, never commit real secrets).
+#
+# This is the ONLY environment on the sandbox-k8s-as-lego GKE demo cluster
+# (see k8s/README.md) — deliberately no uat/staging here,
+# unlike the local-minikube overlays/uat sibling.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: qless-cafe-prod
+namespace: qless-cafe
 
 resources:
   - ../../base
   - namespace.yaml
+  - serviceaccount.yaml
+  - frontendconfig.yaml
+  - managedcertificate.yaml
   - ingress.yaml
 
 labels:
   - pairs:
       environment: prod
 
-# Image tag is set at deploy time, e.g.:
-#   kustomize edit set image qless-cafe=REGISTRY/qless-cafe:$SHORT_SHA
+# Built + pushed by hand with `docker build` / `docker push` (see k8s/README.md —
+# deliberately not `gcloud builds submit`/Cloud Build for this cluster).
+# Re-point this at a new tag after every rebuild, e.g.:
+#   kustomize edit set image qless-cafe=australia-southeast1-docker.pkg.dev/sandbox-k8s-as-lego/qless-cafe/qless-cafe:<tag>
 images:
   - name: qless-cafe
+    newName: australia-southeast1-docker.pkg.dev/sandbox-k8s-as-lego/qless-cafe/qless-cafe
+    newTag: csrf-nocache-20260826025359
 
 secretGenerator:
   - name: qless-cafe-secrets
     envs:
       - secrets.env
 
-# A second replica of django/celery-worker so a rollout always leaves one
-# pod serving traffic — the uat overlay stays at the base's single replica.
-# The Ingress host isn't in config.settings.local's default ALLOWED_HOSTS.
+# Two replicas of django/celery-worker so a rollout always leaves one pod
+# serving traffic; celery-beat MUST stay a single replica (see its manifest —
+# two beat schedulers would double-fire every periodic task).
 patches:
   - target:
       kind: ConfigMap
@@ -35,7 +46,16 @@ patches:
     patch: |-
       - op: add
         path: /data/DJANGO_ALLOWED_HOSTS
-        value: qless.cafe,localhost,127.0.0.1
+        value: qless-cafe.catercareplatform.net,localhost
+      - op: add
+        path: /data/DJANGO_GCP_STATIC_BUCKET_NAME
+        value: sandbox-k8s-as-lego-qless-cafe-static
+      - op: add
+        path: /data/DJANGO_GCP_MEDIA_BUCKET_NAME
+        value: sandbox-k8s-as-lego-qless-cafe-media
+      - op: add
+        path: /data/DJANGO_EMAIL_BACKEND
+        value: django.core.mail.backends.console.EmailBackend
   - target:
       kind: Deployment
       name: django
@@ -43,6 +63,18 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 2
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: qless-cafe-django
+      # The GCE Ingress's auto-generated health check reuses this Host
+      # header (see django-backendconfig.yaml) — must be a host that's in
+      # ALLOWED_HOSTS, so use the real domain, not "localhost".
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/httpGet/httpHeaders/0/value
+        value: qless-cafe.catercareplatform.net
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe/httpGet/httpHeaders/0/value
+        value: qless-cafe.catercareplatform.net
   - target:
       kind: Deployment
       name: celery-worker
@@ -50,3 +82,18 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 2
+  - target:
+      kind: Service
+      name: django
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          # Container-native load balancing: lets the GCE Ingress send
+          # traffic straight to pod IPs instead of via NodePort+kube-proxy.
+          # https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg
+          cloud.google.com/neg: '{"ingress": true}'
+          # Points the Ingress's health check at django-backendconfig.yaml
+          # instead of ingress-gce's default (path "/", no Host header).
+          # https://cloud.google.com/kubernetes-engine/docs/how-to/configure-backendconfig
+          cloud.google.com/backend-config: '{"default": "django-backendconfig"}'

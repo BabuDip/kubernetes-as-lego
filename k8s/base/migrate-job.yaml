@@ -18,15 +18,15 @@ spec:
         component: database-migration
     spec:
       restartPolicy: Never
-      initContainers:
-        - name: wait-for-postgres
-          image: busybox:1.36
-          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
       containers:
         - name: migrate
           image: qless-cafe
           imagePullPolicy: IfNotPresent
-          command: ["uv", "run", "manage.py", "migrate", "--noinput"]
+          # args, not command: keeps the image's ENTRYPOINT (/entrypoint,
+          # which waits for Postgres before exec"ing this) intact. No uv in
+          # the production run-stage image (only the built venv, already on
+          # PATH) — call python directly, same as compose/production/django/start.
+          args: ["python", "/app/manage.py", "migrate", "--noinput"]
           envFrom:
             - configMapRef:
                 name: qless-cafe-config

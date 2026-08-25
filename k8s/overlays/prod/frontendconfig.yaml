@@ -1,0 +1,12 @@
+# Forces HTTP -> HTTPS redirects at the load balancer. The GCE Ingress
+# controller otherwise provisions both an HTTP and an HTTPS proxy and happily
+# serves plaintext on the HTTP one — this is what makes the app HTTPS-only.
+# https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-features#https_redirect
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: qless-cafe-frontend-config
+spec:
+  redirectToHttps:
+    enabled: true
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT

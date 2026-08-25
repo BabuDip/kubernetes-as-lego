@@ -21,6 +21,7 @@ resources:
   - redis-service.yaml
   - django-deployment.yaml
   - django-service.yaml
+  - django-backendconfig.yaml
   - celery-worker-deployment.yaml
   - celery-beat-deployment.yaml
   - migrate-job.yaml

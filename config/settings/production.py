@@ -37,6 +37,14 @@ CACHES = {
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # https://docs.djangoproject.com/en/dev/ref/settings/#secure-ssl-redirect
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+# https://docs.djangoproject.com/en/dev/ref/settings/#secure-redirect-exempt
+# kubelet's probes and the GCE load balancer's health check (see
+# k8s/base/django-backendconfig.yaml) hit /healthcheck/ on the Pod directly
+# over plain HTTP and never send X-Forwarded-Proto, so without this narrow,
+# explicit exemption they'd be 301/302'd and marked permanently unhealthy.
+# Every other URL still gets the redirect — this does not weaken transport
+# security for real traffic.
+SECURE_REDIRECT_EXEMPT = [r"^healthcheck/$"]
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
 SESSION_COOKIE_SECURE = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
@@ -63,27 +71,48 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 )
 
 
-GS_BUCKET_NAME = env("DJANGO_GCP_STORAGE_BUCKET_NAME")
-# STATIC & MEDIA
-# ------------------------
+# Two buckets, not one: our org's `iam.managed.allowedPolicyMembers` policy
+# blocks `allUsers`/`allAuthenticatedUsers` IAM bindings by default, so a
+# single bucket can't mix a public STATIC_URL with private media. Static
+# assets are content-hashed and non-sensitive -> public bucket, stable URL.
+# Media (user/staff-uploaded product photos) stays private -> every
+# FileField.url is a short-lived v4 signed URL instead of a fixed prefix.
+# https://django-storages.readthedocs.io/en/latest/backends/gcloud.html
+GS_STATIC_BUCKET_NAME = env("DJANGO_GCP_STATIC_BUCKET_NAME")
+GS_MEDIA_BUCKET_NAME = env("DJANGO_GCP_MEDIA_BUCKET_NAME")
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
         "OPTIONS": {
+            "bucket_name": GS_MEDIA_BUCKET_NAME,
             "location": "media",
             "file_overwrite": False,
+            "querystring_auth": True,
         },
     },
     "staticfiles": {
         "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
         "OPTIONS": {
+            "bucket_name": GS_STATIC_BUCKET_NAME,
             "location": "static",
+            "querystring_auth": False,
+            # Filenames aren't content-hashed (plain GoogleCloudStorage, not
+            # ManifestStaticFilesStorage), so the same URL is reused across
+            # deploys — without this, GCS's own default Cache-Control
+            # (public, max-age=3600) plus browser caching serves a stale
+            # bundle for up to an hour after every rollout.
+            # https://django-storages.readthedocs.io/en/latest/backends/gcloud.html
+            "object_parameters": {
+                "cache_control": "no-cache, max-age=0, must-revalidate",
+            },
         },
     },
 }
-MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/media/"
+# No MEDIA_URL override here on purpose: leaving it unset means every
+# ImageField/FileField.url() call goes through GoogleCloudStorage.url(),
+# which mints a signed URL against GS_MEDIA_BUCKET_NAME on demand.
 COLLECTFASTA_STRATEGY = "collectfasta.strategies.gcloud.GoogleCloudStrategy"
-STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
+STATIC_URL = f"https://storage.googleapis.com/{GS_STATIC_BUCKET_NAME}/static/"
 
 # EMAIL
 # ------------------------------------------------------------------------------
