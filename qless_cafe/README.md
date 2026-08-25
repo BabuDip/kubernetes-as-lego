@@ -381,13 +381,17 @@ dev` (step 4 above) regardless of which backend workflow you use.
 ## API Reference
 
 All endpoints are mounted under `/api/`. Auth is a same-origin session cookie —
-call `GET /api/auth/csrf/` once to prime the CSRF cookie before any unsafe request.
+call `GET /api/auth/csrf/` before every unsafe request (POST/PUT/PATCH/DELETE)
+to get the current CSRF token and echo it back as the `X-CSRFToken` header.
+Deliberately not cached client-side: Django can rotate the token per response,
+so a stale cached value silently stops matching and fails every request after
+that.
 
 ### Auth (`/api/auth/`) — `identity` app
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| GET | `/csrf/` | Any | Prime the CSRF cookie |
+| GET | `/csrf/` | Any | Get a fresh CSRF token (call before every unsafe request) |
 | POST | `/signup/` | Any | Create an account |
 | POST | `/login/` | Any | Session login (email + password) |
 | POST | `/logout/` | Authenticated | Clear the session |

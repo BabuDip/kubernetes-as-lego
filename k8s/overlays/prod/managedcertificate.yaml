@@ -1,0 +1,14 @@
+# Google-managed TLS certificate for the Ingress below — GKE requests,
+# renews, and installs it automatically once the domain's DNS A record
+# resolves to the reserved static IP (see ingress.yaml's
+# kubernetes.io/ingress.global-static-ip-name annotation). Provisioning can
+# take up to ~30–60 minutes after DNS propagates; check progress with:
+#   kubectl -n qless-cafe describe managedcertificate qless-cafe-cert
+# https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: qless-cafe-cert
+spec:
+  domains:
+    - qless-cafe.catercareplatform.net

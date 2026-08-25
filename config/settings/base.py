@@ -249,9 +249,11 @@ FIXTURE_DIRS = (str(APPS_DIR / "fixtures"),)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-httponly
 SESSION_COOKIE_HTTPONLY = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-httponly
-# The React SPA reads this cookie in JS to set the X-CSRFToken header (the
-# "double submit cookie" pattern) — it must NOT be HttpOnly for that to work.
-CSRF_COOKIE_HTTPONLY = False
+# The SPA no longer reads this cookie in JS — it fetches the token from GET
+# /api/auth/csrf/'s JSON body instead (see frontend/src/api/client.js), so
+# there's no reason to leave the cookie readable by any other script on the
+# page. Overrides Django's own default (False).
+CSRF_COOKIE_HTTPONLY = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#x-frame-options
 X_FRAME_OPTIONS = "DENY"
 

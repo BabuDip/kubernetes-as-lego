@@ -21,15 +21,13 @@ spec:
         app: celery-beat
         component: task-scheduler
     spec:
-      initContainers:
-        - name: wait-for-postgres
-          image: busybox:1.36
-          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
       containers:
         - name: celery-beat
           image: qless-cafe
           imagePullPolicy: IfNotPresent
-          command: ["uv", "run", "celery", "-A", "config.celery_app", "beat", "-l", "INFO"]
+          # args, not command: keeps the image's ENTRYPOINT (/entrypoint,
+          # which waits for Postgres before exec"ing this) intact.
+          args: ["/start-celerybeat"]
           envFrom:
             - configMapRef:
                 name: qless-cafe-config

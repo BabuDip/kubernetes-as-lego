@@ -256,6 +256,23 @@ kubectl delete -k k8s/overlays/prod
 
 ---
 
+## Step 6 — Deploy to a real GKE cluster (HTTPS, Artifact Registry, GCS)
+
+Everything so far ran on minikube. This step takes the exact same
+[k8s/base](k8s/base) manifests to a real GKE cluster in its own GCP project,
+fronted by a Google-managed TLS certificate on a public domain —
+[k8s/overlays/prod](k8s/overlays/prod) is the GKE-specific overlay (one
+project, one cluster, one environment — no uat here).
+
+The full step-by-step runbook (VPC, firewall rules, node service account,
+the cluster itself, Artifact Registry, GCS buckets for static/media,
+Workload Identity, secrets, and the HTTPS Ingress) lives in
+**[k8s/README.md](k8s/README.md)**, not here — it's long enough, and specific
+enough to a real cloud deployment, that it belongs next to the manifests it
+documents rather than in this local-first tutorial.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

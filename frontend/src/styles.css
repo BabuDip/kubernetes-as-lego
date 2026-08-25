@@ -337,7 +337,10 @@ a {
   border-radius: 30px;
   padding: 6px;
   box-shadow: 0 14px 30px rgba(23, 33, 30, 0.3);
-  max-width: calc(100vw - 24px);
+  /* Fill small screens edge-to-edge instead of shrinking to the tabs'
+     content width, but stop growing once there's room to spare. */
+  width: calc(100vw - 24px);
+  max-width: 420px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -346,18 +349,23 @@ a {
 }
 .tab {
   display: flex;
+  flex: 1 1 0;
+  min-width: 0;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 8px 10px;
   border-radius: 24px;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.65);
   text-decoration: none;
+  white-space: nowrap;
 }
 .tab-icon {
   position: relative;
   font-size: 15px;
   display: flex;
+  flex: none;
 }
 .tab-badge {
   position: absolute;
@@ -387,17 +395,11 @@ a {
   font-weight: 600;
   background: #fff;
 }
+/* Labels stay visible at every screen size — only the pill/color changes
+   when a tab is active (see .tab.on above). */
 .tab span:last-child {
-  display: none;
-}
-.tab.on span:last-child {
-  display: inline;
-}
-
-@media (min-width: 480px) {
-  .tab span:last-child {
-    display: inline;
-  }
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* product grid */

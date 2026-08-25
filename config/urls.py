@@ -8,7 +8,15 @@ from django.urls import re_path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
 
+from config.views import healthcheck
+
 urlpatterns: list[URLPattern | URLResolver] = [
+    # Unauthenticated, no DB/Redis dependency — kubelet and the GKE load
+    # balancer's health check both hit this directly (see k8s/base's probes
+    # and django-backendconfig.yaml). Must stay exempt from
+    # SECURE_SSL_REDIRECT (config.settings.production) since those checks
+    # talk to the Pod over plain HTTP, bypassing the HTTPS load balancer.
+    path("healthcheck/", healthcheck, name="healthcheck"),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # JSON API (DRF) consumed by the React SPA. Real-time push is over /ws/ (asgi.py).

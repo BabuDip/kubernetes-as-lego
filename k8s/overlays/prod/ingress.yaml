@@ -1,13 +1,24 @@
+# GKE's built-in Ingress controller (class "gce") provisions an external
+# Application Load Balancer backed by container-native load balancing (NEGs)
+# — no ingress-nginx/cert-manager to install ourselves. TLS terminates here
+# using the Google-managed cert from managedcertificate.yaml; the static IP
+# is the one reserved as `qless-cafe-ip` (see k8s/README.md, step 2),
+# which the conference DNS A record for qless-cafe.catercareplatform.net
+# already points at.
+# https://cloud.google.com/kubernetes-engine/docs/concepts/ingress
+# https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-features
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: qless-cafe
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "qless-cafe-ip"
+    networking.gke.io/managed-certificates: "qless-cafe-cert"
+    networking.gke.io/v1beta1.FrontendConfig: "qless-cafe-frontend-config"
 spec:
-  ingressClassName: nginx
   rules:
-    - host: qless.cafe
+    - host: qless-cafe.catercareplatform.net
       http:
         paths:
           - path: /

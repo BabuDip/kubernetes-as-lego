@@ -1,14 +1,25 @@
 const BASE = "/api";
 
-function getCookie(name) {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+// Fetches a fresh token from GET /api/auth/csrf/'s response body on every
+// unsafe request and echoes it back as the X-CSRFToken header — Django's
+// documented AJAX-friendly alternative to reading the csrftoken cookie
+// directly (config.settings.base's CSRF_COOKIE_HTTPONLY is Django's own
+// default, False, so the cookie is readable too, but this project doesn't
+// rely on that):
+// https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+// Deliberately not cached — Django can rotate the token per response (e.g.
+// after login, per CSRF_COOKIE_AGE/rotation), so a stale cached value can
+// silently stop matching and fail every subsequent request.
+async function fetchCsrfToken() {
+  const response = await fetch(`${BASE}/auth/csrf/`, { credentials: "same-origin" });
+  const data = await response.json();
+  return data.csrfToken;
 }
 
 async function request(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (method !== "GET") {
-    headers["X-CSRFToken"] = getCookie("csrftoken");
+    headers["X-CSRFToken"] = await fetchCsrfToken();
   }
   const response = await fetch(`${BASE}${path}`, {
     method,
@@ -36,5 +47,5 @@ export const api = {
 };
 
 export async function ensureCsrf() {
-  await request("/auth/csrf/");
+  await fetchCsrfToken();
 }
