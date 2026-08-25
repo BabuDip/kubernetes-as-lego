@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from typing import cast
@@ -28,6 +29,8 @@ from .tasks import send_order_receipt_email
 
 if TYPE_CHECKING:
     from qless_cafe.identity.models import User
+
+logger = logging.getLogger(__name__)
 
 # What a manager taps next, and what that button says. Completed is a dead end.
 NEXT_STATUS = {
@@ -91,7 +94,11 @@ class OrderViewSet(viewsets.ModelViewSet):
                 for line in lines
             ]
         except ValueError as exc:
-            raise ValidationError(str(exc)) from exc
+            # Don't echo the raw exception message back to the client (CWE-209);
+            # the details are only useful server-side.
+            logger.warning("Order creation rejected invalid items/modifiers: %s", exc)
+            msg = "One or more selected items or modifiers are invalid."
+            raise ValidationError(msg) from exc
 
         with transaction.atomic():
             order = Order.objects.create(
