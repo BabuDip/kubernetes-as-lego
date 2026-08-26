@@ -1,6 +1,6 @@
 # Kubernetes as LEGO: Building Platforms one block at a time
 
-[![CI](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yml/badge.svg)](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yml)
+[![CI](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yaml/badge.svg)](https://github.com/BabuDip/kubernetes-as-lego/actions/workflows/ci.yaml)
 [![Python 3.14](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![Django 6.0](https://img.shields.io/badge/django-6.0-092E20?logo=django&logoColor=white)](pyproject.toml)
 [![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](frontend/package.json)

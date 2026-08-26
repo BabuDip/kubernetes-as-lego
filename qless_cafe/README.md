@@ -260,7 +260,7 @@ k8s-as-lego/
 │       ├── context/              # AuthContext, CartContext, NotificationContext
 │       └── api/                  # Fetch client (CSRF handling, JSON, error wrapping)
 ├── compose/                    # Docker build contexts (dev image; prod image also used by k8s builds)
-├── docker-compose.yml          # django, postgres, redis, celeryworker, celerybeat, mailpit
+├── docker-compose.yaml         # django, postgres, redis, celeryworker, celerybeat, mailpit
 ├── pyproject.toml               # Python deps + tool config (ruff, mypy, pytest, djlint)
 └── manage.py
 ```
@@ -290,7 +290,7 @@ for the variables that matter.
 ### 2. Start the stack
 
 ```bash
-docker compose -f docker-compose.yml up -d
+docker compose -f docker-compose.yaml up -d
 ```
 
 | Service | URL | Purpose |
@@ -305,8 +305,8 @@ docker compose -f docker-compose.yml up -d
 ### 3. Migrate and seed demo data
 
 ```bash
-docker compose -f docker-compose.yml run --rm django python manage.py migrate
-docker compose -f docker-compose.yml run --rm django python manage.py seed_demo_data
+docker compose -f docker-compose.yaml run --rm django python manage.py migrate
+docker compose -f docker-compose.yaml run --rm django python manage.py seed_demo_data
 ```
 
 `seed_demo_data` is idempotent (safe to re-run) and creates a demo catalogue plus
@@ -336,7 +336,7 @@ npm run dev         # http://localhost:5173, proxies /api and /ws to :8000
 ### Django admin / superuser
 
 ```bash
-docker compose -f docker-compose.yml run --rm django python manage.py createsuperuser
+docker compose -f docker-compose.yaml run --rm django python manage.py createsuperuser
 ```
 
 This is the Django admin superuser, unrelated to the app's own manager role
@@ -492,8 +492,8 @@ real inbox; bare local runs use the console backend and print messages to stdout
 ## Testing
 
 ```bash
-docker compose -f docker-compose.yml run --rm django pytest
-docker compose -f docker-compose.yml run --rm django pytest qless_cafe/orders    # scope to one app
+docker compose -f docker-compose.yaml run --rm django pytest
+docker compose -f docker-compose.yaml run --rm django pytest qless_cafe/orders    # scope to one app
 ```
 
 Tests are colocated per app (`qless_cafe/<app>/tests/`), use `factory-boy` for test
@@ -530,11 +530,11 @@ the test's normally-rolled-back transaction.
 ## Code Quality
 
 ```bash
-docker compose -f docker-compose.yml run --rm django ruff check .
-docker compose -f docker-compose.yml run --rm django ruff format --check .
-docker compose -f docker-compose.yml run --rm django mypy qless_cafe
-docker compose -f docker-compose.yml run --rm django djlint qless_cafe/templates --lint
-docker compose -f docker-compose.yml run --rm django pre-commit run --all-files
+docker compose -f docker-compose.yaml run --rm django ruff check .
+docker compose -f docker-compose.yaml run --rm django ruff format --check .
+docker compose -f docker-compose.yaml run --rm django mypy qless_cafe
+docker compose -f docker-compose.yaml run --rm django djlint qless_cafe/templates --lint
+docker compose -f docker-compose.yaml run --rm django pre-commit run --all-files
 ```
 
 ```bash

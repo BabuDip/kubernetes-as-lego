@@ -61,10 +61,10 @@ uv run pre-commit run --show-diff-on-failure --color=always --all-files
 ## Checks to run before considering backend work done
 
 ```bash
-docker compose -f docker-compose.yml run --rm django ruff check .
-docker compose -f docker-compose.yml run --rm django ruff format --check .
-docker compose -f docker-compose.yml run --rm django mypy qless_cafe
-docker compose -f docker-compose.yml run --rm django pytest
+docker compose -f docker-compose.yaml run --rm django ruff check .
+docker compose -f docker-compose.yaml run --rm django ruff format --check .
+docker compose -f docker-compose.yaml run --rm django mypy qless_cafe
+docker compose -f docker-compose.yaml run --rm django pytest
 ```
 
 Frontend: `npm run lint && npm run format:check` inside `frontend/`.
