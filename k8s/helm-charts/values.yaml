@@ -1,0 +1,113 @@
+# Default values for the qless-cafe chart. These defaults are dev/minikube-
+# leaning; environment-specific overrides live in values-uat.yaml /
+# values-prod.yaml (mirroring k8s/overlays/{uat,prod}) — see README.md for
+# full install commands.
+
+# environment only drives the "environment" label (see templates/_helpers.tpl)
+# — override per environment file, doesn't gate any other behavior.
+environment: dev
+
+image:
+  # repository/tag have no usable default — always set at install time, e.g.:
+  #   --set image.repository=REGISTRY/qless-cafe --set image.tag=$(git rev-parse --short HEAD)
+  repository: qless-cafe
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Portable ingress-nginx Ingress — used when gke.enabled is false. Works the
+# same way on minikube (`minikube addons enable ingress`) as on any cluster
+# with ingress-nginx installed.
+ingress:
+  enabled: true
+  className: nginx
+  host: qless-cafe.local
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+
+# gke.enabled switches to the GKE-native Ingress (class "gce" +
+# ManagedCertificate + FrontendConfig + Workload Identity ServiceAccount +
+# BackendConfig) instead of the ingress.* block above — see values-prod.yaml.
+gke:
+  enabled: false
+  staticIpName: ""
+  certificateDomains: []
+  serviceAccountEmail: ""
+
+config:
+  settingsModule: config.settings.production
+  # allowedHosts feeds config.settings.production's ALLOWED_HOSTS — always
+  # include "localhost" so kubelet's own probes pass.
+  allowedHosts: "localhost,127.0.0.1"
+  postgresDb: qless_cafe
+  redisUrl: redis://redis:6379/0
+  gcpStaticBucketName: ""
+  gcpMediaBucketName: ""
+  emailBackend: ""
+
+# secrets.* has no usable defaults on purpose — always supply real values via
+# a separate, git-ignored -f file (copy secrets-uat.yaml.example /
+# secrets-prod.yaml.example to secrets-{uat,prod}.yaml) or --set-string.
+# Never commit real values.
+secrets:
+  djangoSecretKey: ""
+  postgresUser: ""
+  postgresPassword: ""
+  djangoAdminUrl: "manage/"
+
+django:
+  replicaCount: 1
+  # Host header sent by the readiness/liveness probes — must be present in
+  # config.allowedHosts. Only prod needs the real domain (see values-prod.yaml).
+  healthCheckHost: localhost
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+celeryWorker:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+celeryBeat:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+postgres:
+  image: postgres:18
+  storageClassName: standard-rwo
+  storageSize: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  image: redis:8.10
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+migrate:
+  # Runs templates/migrate-job.yaml as a pre-install/pre-upgrade Helm hook.
+  enabled: true

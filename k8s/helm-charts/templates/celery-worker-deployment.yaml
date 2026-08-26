@@ -1,0 +1,49 @@
+# Same image as django-deployment.yaml, running the worker command instead —
+# the whole point of a shared image is that "what runs" is just the container
+# command, not a separate build.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  labels:
+    {{- include "qless-cafe.labels" (merge (dict "app" "celery-worker" "component" "task-queue") $) | nindent 4 }}
+spec:
+  replicas: {{ .Values.celeryWorker.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "qless-cafe.selectorLabels" (dict "app" "celery-worker" "component" "task-queue") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qless-cafe.labels" (merge (dict "app" "celery-worker" "component" "task-queue") $) | nindent 8 }}
+    spec:
+      containers:
+        - name: celery-worker
+          image: "{{ .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # args, not command: keeps the image's ENTRYPOINT (/entrypoint,
+          # which waits for Postgres before exec"ing this) intact.
+          args: ["/start-celeryworker"]
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                # No uv in the production run-stage image (only the built
+                # venv is copied in, already on PATH) — call celery directly.
+                - celery -A config.celery_app inspect ping -d "celery@$HOSTNAME" | grep -q OK
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          resources:
+            {{- toYaml .Values.celeryWorker.resources | nindent 12 }}

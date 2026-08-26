@@ -288,3 +288,5 @@ db.sqlite3
 
 # Real secrets for kustomize secretGenerator; commit only *.example templates.
 k8s/overlays/*/secrets.env
+k8s/helm-charts/secrets-*.yaml
+!k8s/helm-charts/secrets-*.yaml.example

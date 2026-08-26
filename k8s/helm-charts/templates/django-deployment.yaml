@@ -1,0 +1,70 @@
+# Runs the production image (compose/production/django/Dockerfile): gunicorn
+# + uvicorn worker behind the container's own /entrypoint, which already
+# waits for Postgres (compose/production/django/entrypoint) — no separate
+# wait-for-postgres initContainer needed here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  labels:
+    {{- include "qless-cafe.labels" (merge (dict "app" "django" "component" "web") $) | nindent 4 }}
+spec:
+  replicas: {{ .Values.django.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "qless-cafe.selectorLabels" (dict "app" "django" "component" "web") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qless-cafe.labels" (merge (dict "app" "django" "component" "web") $) | nindent 8 }}
+    spec:
+      {{- if .Values.gke.enabled }}
+      # Workload Identity — only django gets GCS access (collectstatic,
+      # signed media URLs); celery-worker/celery-beat/migrate keep the
+      # namespace's "default" KSA, bound to nothing.
+      serviceAccountName: qless-cafe-django
+      {{- end }}
+      containers:
+        - name: django
+          image: "{{ .Values.image.repository }}:{{ required "image.tag is required, e.g. --set image.tag=$(git rev-parse --short HEAD)" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # args (not command): the image's ENTRYPOINT is /entrypoint, which
+          # waits for Postgres before exec"ing this. /start runs collectstatic
+          # then gunicorn+uvicorn — see compose/production/django/start.
+          args: ["/start"]
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          readinessProbe:
+            httpGet:
+              # Unauthenticated, no DB/Redis dependency — see config/views.py.
+              path: /healthcheck/
+              port: http
+              # Must be a host present in ALLOWED_HOSTS — see
+              # values.yaml's django.healthCheckHost / values-prod.yaml.
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.django.healthCheckHost }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthcheck/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.django.healthCheckHost }}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.django.resources | nindent 12 }}

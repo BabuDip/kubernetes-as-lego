@@ -1,0 +1,35 @@
+# Must stay at exactly 1 replica — two beat schedulers would double-fire
+# every periodic task. No replicaCount value on purpose (unlike django/
+# celery-worker) to make that impossible to override by mistake.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  labels:
+    {{- include "qless-cafe.labels" (merge (dict "app" "celery-beat" "component" "task-scheduler") $) | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "qless-cafe.selectorLabels" (dict "app" "celery-beat" "component" "task-scheduler") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qless-cafe.labels" (merge (dict "app" "celery-beat" "component" "task-scheduler") $) | nindent 8 }}
+    spec:
+      containers:
+        - name: celery-beat
+          image: "{{ .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # args, not command: keeps the image's ENTRYPOINT (/entrypoint,
+          # which waits for Postgres before exec"ing this) intact.
+          args: ["/start-celerybeat"]
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          resources:
+            {{- toYaml .Values.celeryBeat.resources | nindent 12 }}

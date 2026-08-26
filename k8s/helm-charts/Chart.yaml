@@ -1,0 +1,9 @@
+apiVersion: v2
+name: qless-cafe
+description: >-
+  Helm packaging of QLess Cafe (Django/Channels + Postgres + Redis + Celery),
+  templated from k8s/base's kustomize manifests — see k8s/README.md and
+  k8s/helm-charts/README.md.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

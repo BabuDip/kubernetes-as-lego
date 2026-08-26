@@ -1,0 +1,19 @@
+# Overrides for the minikube/uat environment — mirrors k8s/overlays/uat.
+# See README.md for the full install command.
+environment: uat
+
+ingress:
+  enabled: true
+  className: nginx
+  host: uat.qless.cafe
+
+gke:
+  enabled: false
+
+config:
+  allowedHosts: "uat.qless.cafe,localhost,127.0.0.1"
+
+# values.yaml's default (standard-rwo) is GKE's Persistent Disk class — doesn't
+# exist on a vanilla minikube. minikube's own default StorageClass is "standard".
+postgres:
+  storageClassName: standard
