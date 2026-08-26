@@ -26,7 +26,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y curl ca-certifi
   && rm -rf /tmp/helm.tar.gz /tmp/linux-* \
   && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Pinned to uv 0.12.6's multi-arch image-index digest (not :latest, a mutable
+# tag) — resolve a newer one with:
+#   docker buildx imagetools inspect ghcr.io/astral-sh/uv:<version>
+COPY --from=ghcr.io/astral-sh/uv@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /uvx /bin/
 COPY k8s/operators/cafe-tenant-operator/pyproject.toml k8s/operators/cafe-tenant-operator/uv.lock ./
 RUN uv sync --frozen --no-install-project
 
