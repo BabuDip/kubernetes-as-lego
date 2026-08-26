@@ -53,9 +53,18 @@ patches:
       - op: add
         path: /data/DJANGO_GCP_MEDIA_BUCKET_NAME
         value: sandbox-k8s-as-lego-qless-cafe-media
+      # Real outgoing SMTP — EMAIL_HOST_USER/EMAIL_HOST_PASSWORD are the
+      # sensitive half, kept in secrets.env instead. Gmail app password auth
+      # requires STARTTLS on 587, not the bare EMAIL_BACKEND default.
       - op: add
-        path: /data/DJANGO_EMAIL_BACKEND
-        value: django.core.mail.backends.console.EmailBackend
+        path: /data/EMAIL_HOST
+        value: smtp.gmail.com
+      - op: add
+        path: /data/EMAIL_PORT
+        value: "587"
+      - op: add
+        path: /data/EMAIL_USE_TLS
+        value: "True"
   - target:
       kind: Deployment
       name: django
