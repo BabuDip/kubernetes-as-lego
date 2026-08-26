@@ -1,4 +1,4 @@
-exclude: '^docs/|/migrations/|devcontainer.json|^k8s/helm-charts/templates/|^\.vscode/.*\.json$'
+exclude: '^docs/|/migrations/|devcontainer.json|^\.vscode/.*\.json$'
 default_stages: [pre-commit]
 minimum_pre_commit_version: "3.2.0"
 
@@ -15,7 +15,11 @@ repos:
       - id: check-toml
       - id: check-xml
       - id: check-yaml
+        # Helm templates use Go-template syntax ({{- ... }}) that isn't valid
+        # standalone YAML, so only this parsing hook needs to skip them.
+        exclude: '^k8s/helm-charts/templates/'
       - id: debug-statements
+
       - id: check-builtin-literals
       - id: check-case-conflict
       - id: check-merge-conflict
