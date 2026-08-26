@@ -17,4 +17,3 @@ config:
 # exist on a vanilla minikube. minikube's own default StorageClass is "standard".
 postgres:
   storageClassName: standard
-
