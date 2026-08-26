@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import { PICKUP_LABELS, PICKUP_TONE } from "../../utils/pickup.js";
@@ -55,8 +55,10 @@ export default function ManagerDashboard() {
   const [board, setBoard] = useState({});
   const [selected, setSelected] = useState(null);
   const [freshIds, setFreshIds] = useState(() => new Set());
+  const [demoMode, setDemoMode] = useState(false);
   const notifications = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
+  const boardRef = useRef(board);
 
   const load = () => {
     api.get("/orders/stats/").then(setStats);
@@ -112,10 +114,57 @@ export default function ManagerDashboard() {
     setSelected((current) => (current?.id === orderId ? null : current));
   };
 
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
+
+  // Demo mode: purely client-side — no backend flag or bot user, just this tab
+  // repeatedly calling the same /advance/ endpoint a manager's click would, working
+  // the board oldest-first so it reads like a person triaging the queue rather than
+  // a fixed script. Depending only on demoMode (not board/advance) keeps the pacing
+  // steady instead of restarting the timer on every websocket-driven board refresh.
+  useEffect(() => {
+    if (!demoMode) return undefined;
+    let timer;
+    const tick = async () => {
+      const eligible = ["received", "preparing", "ready"].flatMap((status) => boardRef.current[status] || []);
+      if (eligible.length > 0) {
+        const target = [...eligible].sort((a, b) => b.age_seconds - a.age_seconds)[0];
+        try {
+          await advance(target.id);
+        } catch {
+          // Order likely already moved on (e.g. a real manager also clicked it) — retry next tick.
+        }
+      }
+      timer = setTimeout(tick, 6000 + Math.random() * 5000);
+    };
+    timer = setTimeout(tick, 3000 + Math.random() * 3000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoMode]);
+
   return (
     <div className="page">
       <div className="mtop">
         <LiveClock />
+        <div className="demo-toggle">
+          {demoMode && (
+            <span className="demo-toggle-live">
+              <span className="demo-toggle-dot" />
+              Auto-triaging
+            </span>
+          )}
+          <span>Demo Mode</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={demoMode}
+            className="demo-toggle-switch"
+            onClick={() => setDemoMode((on) => !on)}
+          >
+            <span className="sr-only">Toggle demo mode</span>
+          </button>
+        </div>
       </div>
 
       {stats && (
