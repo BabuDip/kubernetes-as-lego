@@ -77,8 +77,6 @@ DATABASES["default"]["ATOMIC_REQUESTS"] = True
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
 ROOT_URLCONF = "config.urls"
-# https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
-WSGI_APPLICATION = "config.wsgi.application"
 # https://channels.readthedocs.io/en/stable/installation.html
 ASGI_APPLICATION = "config.asgi.application"
 # https://channels.readthedocs.io/en/stable/topics/channel_layers.html

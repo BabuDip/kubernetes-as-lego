@@ -20,15 +20,14 @@ an agent needs to work safely and productively.
 
 ## Running things
 
-Always go through `just` (a thin wrapper around `docker compose`), not `docker
-compose` directly, unless you need flags `just` doesn't expose:
+Use `docker compose` directly (there is no task-runner wrapper in this repo):
 
 ```bash
-just up                          # start all services (django, postgres, redis, celeryworker, celerybeat, mailpit)
-just manage migrate              # run Django management commands
-just manage seed_demo_data       # create demo catalogue + manager/customer accounts
-just pytest                      # run the backend test suite
-just pytest qless_cafe/orders    # scope to one app
+docker compose up -d                                  # start all services (django, postgres, redis, celeryworker, celerybeat, mailpit)
+docker compose run --rm django python manage.py migrate       # run Django management commands
+docker compose run --rm django python manage.py seed_demo_data # create demo catalogue + manager/customer accounts
+docker compose run --rm django pytest                  # run the backend test suite
+docker compose run --rm django pytest qless_cafe/orders # scope to one app
 ```
 
 Frontend (only needed when editing `frontend/src/`):
@@ -62,10 +61,10 @@ uv run pre-commit run --show-diff-on-failure --color=always --all-files
 ## Checks to run before considering backend work done
 
 ```bash
-docker compose -f docker-compose.local.yml run --rm django ruff check .
-docker compose -f docker-compose.local.yml run --rm django ruff format --check .
-docker compose -f docker-compose.local.yml run --rm django mypy qless_cafe
-docker compose -f docker-compose.local.yml run --rm django pytest
+docker compose -f docker-compose.yml run --rm django ruff check .
+docker compose -f docker-compose.yml run --rm django ruff format --check .
+docker compose -f docker-compose.yml run --rm django mypy qless_cafe
+docker compose -f docker-compose.yml run --rm django pytest
 ```
 
 Frontend: `npm run lint && npm run format:check` inside `frontend/`.
@@ -113,5 +112,6 @@ Frontend: `npm run lint && npm run format:check` inside `frontend/`.
 - No `docs/adr/` or `docs/worklog/` — there are no ADRs or worklogs to consult.
 - No frontend test suite (no vitest/jest/testing-library configured).
 - No `.env.example` — the local dev env files under `.envs/.local/` are already
-  committed with working (non-secret) values; only `.envs/.production/` is
-  git-ignored.
+  committed with working (non-secret) values. There is no `docker-compose.production.yml`
+  or `.envs/.production/` anymore — production/GKE config lives in
+  `k8s/overlays/prod/secrets.env` instead.

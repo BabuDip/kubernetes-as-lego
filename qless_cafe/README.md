@@ -236,7 +236,7 @@ live-reloading local iteration against the same backend.
 
 ```text
 k8s-as-lego/
-├── config/                   # Django project (settings, ASGI/WSGI, Celery app, root URLs)
+├── config/                   # Django project (settings, ASGI, Celery app, root URLs)
 │   ├── settings/
 │   │   ├── base.py           # Shared settings
 │   │   ├── local.py          # Local dev overrides
@@ -259,10 +259,8 @@ k8s-as-lego/
 │       ├── components/          # Reusable UI (Nav, TabBar, ItemSheet, LiveDuration, …)
 │       ├── context/              # AuthContext, CartContext, NotificationContext
 │       └── api/                  # Fetch client (CSRF handling, JSON, error wrapping)
-├── compose/                    # Docker build contexts (local + production)
-├── docker-compose.local.yml    # django, postgres, redis, celeryworker, celerybeat, mailpit
-├── docker-compose.production.yml
-├── justfile                    # `just up`, `just manage`, `just pytest`, …
+├── compose/                    # Docker build contexts (dev image; prod image also used by k8s builds)
+├── docker-compose.yml          # django, postgres, redis, celeryworker, celerybeat, mailpit
 ├── pyproject.toml               # Python deps + tool config (ruff, mypy, pytest, djlint)
 └── manage.py
 ```
@@ -279,22 +277,20 @@ below.
 ### Prerequisites
 
 - Docker & Docker Compose
-- [just](https://github.com/casey/just) (optional but recommended — thin wrapper
-  around the `docker compose` commands below)
 - Node.js 20+ and npm (only needed if you're changing `frontend/src/`)
 
 ### 1. Environment files
 
 Local dev already ships with working `.envs/.local/.django` and
-`.envs/.local/.postgres` files — no setup required to get started. For a production
-deployment, create the equivalent files under `.envs/.production/` from your secrets
-manager; see [Configuration](#configuration) for the variables that matter.
+`.envs/.local/.postgres` files — no setup required to get started. For a
+production/GKE deployment, config lives in `k8s/overlays/prod/secrets.env`
+instead (see [k8s/README.md](../k8s/README.md)); see [Configuration](#configuration)
+for the variables that matter.
 
 ### 2. Start the stack
 
 ```bash
-just up
-# equivalent to: docker compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.yml up -d
 ```
 
 | Service | URL | Purpose |
@@ -309,8 +305,8 @@ just up
 ### 3. Migrate and seed demo data
 
 ```bash
-just manage migrate
-just manage seed_demo_data
+docker compose -f docker-compose.yml run --rm django python manage.py migrate
+docker compose -f docker-compose.yml run --rm django python manage.py seed_demo_data
 ```
 
 `seed_demo_data` is idempotent (safe to re-run) and creates a demo catalogue plus
@@ -340,7 +336,7 @@ npm run dev         # http://localhost:5173, proxies /api and /ws to :8000
 ### Django admin / superuser
 
 ```bash
-docker compose -f docker-compose.local.yml run --rm django python manage.py createsuperuser
+docker compose -f docker-compose.yml run --rm django python manage.py createsuperuser
 ```
 
 This is the Django admin superuser, unrelated to the app's own manager role
@@ -496,8 +492,8 @@ real inbox; bare local runs use the console backend and print messages to stdout
 ## Testing
 
 ```bash
-just pytest              # or: docker compose -f docker-compose.local.yml run --rm django pytest
-just pytest qless_cafe/orders    # scope to one app
+docker compose -f docker-compose.yml run --rm django pytest
+docker compose -f docker-compose.yml run --rm django pytest qless_cafe/orders    # scope to one app
 ```
 
 Tests are colocated per app (`qless_cafe/<app>/tests/`), use `factory-boy` for test
@@ -534,11 +530,11 @@ the test's normally-rolled-back transaction.
 ## Code Quality
 
 ```bash
-docker compose -f docker-compose.local.yml run --rm django ruff check .
-docker compose -f docker-compose.local.yml run --rm django ruff format --check .
-docker compose -f docker-compose.local.yml run --rm django mypy qless_cafe
-docker compose -f docker-compose.local.yml run --rm django djlint qless_cafe/templates --lint
-docker compose -f docker-compose.local.yml run --rm django pre-commit run --all-files
+docker compose -f docker-compose.yml run --rm django ruff check .
+docker compose -f docker-compose.yml run --rm django ruff format --check .
+docker compose -f docker-compose.yml run --rm django mypy qless_cafe
+docker compose -f docker-compose.yml run --rm django djlint qless_cafe/templates --lint
+docker compose -f docker-compose.yml run --rm django pre-commit run --all-files
 ```
 
 ```bash

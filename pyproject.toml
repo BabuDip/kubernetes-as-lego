@@ -37,14 +37,11 @@ dependencies = [
 dev = [
   "coverage==7.15.4",
   "django-coverage-plugin==3.2.2",
-  "django-debug-toolbar==7.1.1",
-  "django-extensions==4.1",
   "django-stubs[compatible-mypy]==6.1.0",
   "django-upgrade==1.32.0",
   "djangorestframework-stubs==3.18.0",
   "djlint==1.44.2",
   "factory-boy==3.3.3",
-  "ipdb==0.13.13",
   "mypy==2.3.1",
   "pre-commit==4.6.2",
   "psycopg[c]==3.3.4",
@@ -53,7 +50,6 @@ dev = [
   "pytest-sugar==1.1.1",
   "ruff==0.16.4",
   "watchfiles==1.2.0",
-  "werkzeug[watchdog]==3.1.8",
 ]
 
 # ==== djLint ====
