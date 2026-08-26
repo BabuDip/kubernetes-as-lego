@@ -29,7 +29,7 @@ labels:
 images:
   - name: qless-cafe
     newName: australia-southeast1-docker.pkg.dev/sandbox-k8s-as-lego/qless-cafe/qless-cafe
-    newTag: csrf-nocache-20260826025359
+    newTag: f07f79d
 
 secretGenerator:
   - name: qless-cafe-secrets
