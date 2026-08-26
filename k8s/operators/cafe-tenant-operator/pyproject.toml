@@ -1,0 +1,27 @@
+[project]
+name = "cafe-tenant-operator"
+version = "0.1.0"
+description = """\
+  Kopf operator that provisions an isolated QLess Cafe tenant (namespace + secrets + Helm release) from a CafeTenant \
+  custom resource.\
+  """
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = "==3.14.*"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "kopf==1.44.6",
+  "kubernetes==36.0.3",
+  "pyyaml==6.0.3",
+]
+
+[dependency-groups]
+dev = [
+  "ruff==0.16.4",
+]
+
+[tool.ruff]
+line-length = 88

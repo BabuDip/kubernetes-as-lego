@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cafe-tenant-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cafe-tenant-operator
+  namespace: cafe-tenant-operator
+---
+# Least-privilege for exactly what this operator does: manage its own CR,
+# create/delete tenant Namespaces, and manage the resource kinds
+# k8s/helm-charts itself creates inside those namespaces (helm needs read+
+# write on all of them to compute/apply its diff). No cluster-admin.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cafe-tenant-operator
+rules:
+  - apiGroups: ["platform.qless.cafe"]
+    resources: ["cafetenants"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["platform.qless.cafe"]
+    resources: ["cafetenants/status"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "services", "serviceaccounts", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cafe-tenant-operator
+subjects:
+  - kind: ServiceAccount
+    name: cafe-tenant-operator
+    namespace: cafe-tenant-operator
+roleRef:
+  kind: ClusterRole
+  name: cafe-tenant-operator
+  apiGroup: rbac.authorization.k8s.io

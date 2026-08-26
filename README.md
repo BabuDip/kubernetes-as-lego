@@ -360,6 +360,60 @@ swap — rather than a paywalled Bitnami subchart.
 
 ---
 
+## Step 9 — Custom Resources and the Kopf operator pattern
+
+A **CustomResourceDefinition (CRD)** teaches the Kubernetes API server a new
+`kind` — after installing one, `kubectl apply`/`get`/`watch` work on your own
+resource exactly like they do on a built-in `Pod` or `Deployment`. On its
+own, a CRD is just a validated, versioned bucket of YAML the API server will
+store — nothing *acts* on it until an **operator** (a controller that
+watches that kind and reconciles the cluster to match) is also running.
+[Kopf](https://kopf.readthedocs.io/) is a Python framework for writing that
+controller as plain `@kopf.on.create`/`on.update`/`on.delete`/`timer`
+functions, instead of Go + client-go/controller-runtime (the traditional
+route, e.g. via [Kubebuilder](https://book.kubebuilder.io/) or
+[Operator SDK](https://sdk.operatorframework.io/)).
+
+### CRDs you'll actually meet in the wild, and what installs them
+
+Almost every CRD you'll encounter in a real cluster comes bundled with a
+specific tool, not written from scratch:
+
+| Tool | CRDs it installs | What they're for |
+|---|---|---|
+| [cert-manager](https://cert-manager.io/) | `Certificate`, `Issuer`, `ClusterIssuer` | Automated TLS cert issuance/renewal (Let's Encrypt, private CAs) |
+| [Prometheus Operator](https://prometheus-operator.dev/) (`kube-prometheus-stack`) | `Prometheus`, `ServiceMonitor`, `PodMonitor`, `PrometheusRule`, `Alertmanager` | Declarative "what to scrape"/"what to alert on" instead of hand-edited scrape configs |
+| [CloudNativePG](https://cloudnative-pg.io/) | `Cluster`, `Backup`, `ScheduledBackup`, `Pooler` | Postgres HA, failover, PITR backups — this repo's planned Postgres replacement (Step 8) |
+| [external-secrets](https://external-secrets.io/) | `ExternalSecret`, `SecretStore`, `ClusterSecretStore` | Sync secrets from Vault/AWS/GCP Secret Manager into native `Secret` objects |
+| [Argo CD](https://argo-cd.readthedocs.io/) | `Application`, `AppProject` | GitOps: "this Git path should equal this cluster state" |
+| [Crossplane](https://www.crossplane.io/) | Composite Resource Definitions (XRDs) — user-defined, e.g. `Database`, `Bucket` | Provision *cloud* infra (an RDS instance, a GCS bucket) via `kubectl apply` |
+| [KEDA](https://keda.sh/) | `ScaledObject`, `ScaledJob` | Autoscale on external metrics (queue depth, cron) that the HPA can't see |
+| [Gateway API](https://gateway-api.sigs.k8s.io/) (successor to `Ingress`) | `GatewayClass`, `Gateway`, `HTTPRoute` | Ingress traffic routing — the annotation-heavy `Ingress` object (this repo's `ingress.yaml`) is being superseded by this |
+| Istio / Linkerd (service mesh) | `VirtualService`/`DestinationRule` (Istio), `ServiceProfile` (Linkerd) | Traffic splitting, retries, mTLS between services |
+| [Velero](https://velero.io/) | `Backup`, `Restore`, `Schedule` | Cluster/namespace-level backup and disaster recovery |
+
+Notice the pattern: every one of these solves an **infrastructure** problem
+that's the same for everybody (TLS, backups, metrics, secrets, autoscaling).
+That's precisely why they're pre-built and installable — and precisely why
+you should reach for one of these (or a Helm chart per Step 8) rather than
+writing your own controller for any of them.
+
+### Where CRDs stop making sense to buy, and start making sense to write
+
+None of the tools above know anything about *this app's* business rules.
+[k8s/operators/cafe-tenant-operator](k8s/operators/cafe-tenant-operator) is
+a small Kopf operator + `CafeTenant` CRD built for exactly that gap:
+provisioning a new, isolated QLess Cafe tenant (its own Namespace, generated
+secrets, a `k8s/helm-charts` release, and an optional demo-data seed job) is
+an app-specific workflow — Helm/kustomize/Argo CD only ever apply *one* set
+of values you hand them; none of them turn "a new cafe signed up" into "the
+right Kubernetes objects" by themselves. See its
+[README.md](k8s/operators/cafe-tenant-operator/README.md) for the CRD
+schema, the Kopf handlers, and how to run it locally against minikube
+(no image build required for development).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
