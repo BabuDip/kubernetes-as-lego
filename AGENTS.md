@@ -6,6 +6,14 @@ Instructions for AI coding agents working in this repository. Humans: see
 (architecture, API reference, order lifecycle, etc.) — this file only covers what
 an agent needs to work safely and productively.
 
+## Instruction Sources
+
+- Root agent guidance: this file (the source of truth — read it in full).
+- Copilot quick-reference: [.github/copilot-instructions.md](.github/copilot-instructions.md).
+- Path-scoped rules: `.github/instructions/*.instructions.md` (Python, Django,
+  tests, React, Kubernetes/Docker/GKE — auto-applied by file path when editing
+  matching files).
+
 ## Stack
 
 - Backend: Python 3.14, Django 6.0.8, Django REST Framework, Django Channels
