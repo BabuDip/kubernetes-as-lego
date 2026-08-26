@@ -25,6 +25,13 @@ from kubernetes import config as k8s_config
 CHART_PATH = Path(os.environ.get("QLESS_CAFE_CHART_PATH", "/chart"))
 IMAGE_REPOSITORY = os.environ.get("QLESS_CAFE_IMAGE_REPOSITORY", "qless-cafe")
 
+# Pins every release's qless-cafe.fullname helper (see _helpers.tpl) to this
+# fixed value instead of the release-name-derived default — namespace
+# isolation (one tenant per namespace) already prevents collisions, and a
+# predictable prefix is what lets this operator look up specific objects
+# (the django Deployment, the config/secret envFrom refs) by name below.
+FULLNAME = "qless-cafe"
+
 # starter/growth sizing presets — see the CRD schema's spec.plan description.
 PLAN_SIZES = {
     "starter": {"django": 1, "celery_worker": 1},
@@ -81,6 +88,7 @@ def build_values(spec: dict[str, Any], tenant_name: str) -> dict[str, Any]:
     }
     return {
         "environment": f"tenant-{tenant_name}",
+        "fullnameOverride": FULLNAME,
         "ingress": {"enabled": False},
         "gke": {"enabled": False},
         "image": {
@@ -132,10 +140,10 @@ def seed_demo_data_job(namespace: str, image_tag: str) -> client.V1Job:
         args=["python", "/app/manage.py", "seed_demo_data"],
         env_from=[
             client.V1EnvFromSource(
-                config_map_ref=client.V1ConfigMapEnvSource(name="qless-cafe-config")
+                config_map_ref=client.V1ConfigMapEnvSource(name=f"{FULLNAME}-config")
             ),
             client.V1EnvFromSource(
-                secret_ref=client.V1SecretEnvSource(name="qless-cafe-secrets")
+                secret_ref=client.V1SecretEnvSource(name=f"{FULLNAME}-secrets")
             ),
         ],
     )
@@ -218,7 +226,7 @@ def check_readiness(
     namespace = tenant_namespace(name)
     apps_v1 = client.AppsV1Api()
     try:
-        deployment = apps_v1.read_namespaced_deployment("django", namespace)
+        deployment = apps_v1.read_namespaced_deployment(f"{FULLNAME}-django", namespace)
     except client.ApiException as exc:
         if exc.status == 404:
             return  # helm hasn't created it yet
