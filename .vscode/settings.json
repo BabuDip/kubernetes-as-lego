@@ -1,0 +1,10 @@
+{
+  // Helm chart templates use Go-template syntax ({{- ... }}) that isn't
+  // valid standalone YAML — a YAML-aware formatter/linter "fixing" that
+  // syntax silently corrupts these files. Treat them as plain text instead.
+  "files.associations": {
+    "k8s/helm-charts/templates/**/*.yaml": "plaintext",
+    "k8s/helm-charts/templates/**/*.tpl": "plaintext",
+    "k8s/helm-charts/templates/NOTES.txt": "plaintext"
+  }
+}

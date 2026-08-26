@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: django
+  labels:
+    {{- include "qless-cafe.labels" (merge (dict "app" "django" "component" "web") $) | nindent 4 }}
+  {{- if .Values.gke.enabled }}
+  annotations:
+    # Container-native load balancing: lets the GCE Ingress send traffic
+    # straight to pod IPs instead of via NodePort+kube-proxy.
+    # https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg
+    cloud.google.com/neg: '{"ingress": true}'
+    # Points the Ingress's health check at django-backendconfig.yaml instead
+    # of ingress-gce's default (path "/", no Host header).
+    cloud.google.com/backend-config: '{"default": "django-backendconfig"}'
+  {{- end }}
+spec:
+  selector:
+    {{- include "qless-cafe.selectorLabels" (dict "app" "django" "component" "web") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

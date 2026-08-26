@@ -1,0 +1,15 @@
+QLess Cafe ({{ .Values.environment }}) — release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+{{- if .Values.gke.enabled }}
+
+GKE Ingress (TLS cert provisioning can take up to ~60 minutes after DNS
+propagates — see k8s/README.md's GKE runbook):
+{{- range .Values.gke.certificateDomains }}
+  https://{{ . }}
+{{- end }}
+{{- else if .Values.ingress.enabled }}
+
+Ingress host: http://{{ .Values.ingress.host }}
+{{- end }}
+
+Check rollout status:
+  kubectl -n {{ .Release.Namespace }} get pods

@@ -1,0 +1,41 @@
+# Redis backs the Celery broker, the Channels layer, and the cache — all
+# expendable on restart, so a plain Deployment with ephemeral storage is
+# enough (no PVC, unlike postgres-statefulset.yaml). Kept hand-rolled
+# long-term, unlike postgres — no persistence/clustering to justify an
+# off-the-shelf chart (see ../../../README.md's Step 8).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    {{- include "qless-cafe.labels" (merge (dict "app" "redis" "component" "cache") $) | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "qless-cafe.selectorLabels" (dict "app" "redis" "component" "cache") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qless-cafe.labels" (merge (dict "app" "redis" "component" "cache") $) | nindent 8 }}
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}

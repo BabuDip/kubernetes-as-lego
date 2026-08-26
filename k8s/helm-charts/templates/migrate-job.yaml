@@ -1,0 +1,46 @@
+{{- if .Values.migrate.enabled -}}
+# Runs migrations against the ConfigMap/Secret/Postgres this same release
+# creates. post-install (not pre-install): pre-install hooks run BEFORE the
+# chart's own templates (configmap.yaml, secret.yaml, postgres-statefulset.yaml)
+# are created, so a pre-install Job here would hit a missing ConfigMap/Secret
+# every time — post-install runs after everything else exists. pre-upgrade is
+# still correct for upgrades, since by then those resources already exist
+# from the previous release. Fixed name + hook-delete-policy (not kustomize's
+# per-release-unique Job name) is the idiomatic Helm way to run a one-shot
+# job on every install/upgrade.
+# https://helm.sh/docs/topics/charts_hooks/
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: qless-cafe-migrate
+  labels:
+    {{- include "qless-cafe.labels" (merge (dict "app" "migrate" "component" "database-migration") $) | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        {{- include "qless-cafe.labels" (merge (dict "app" "migrate" "component" "database-migration") $) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # args, not command: keeps the image's ENTRYPOINT (waits for
+          # Postgres) intact. No uv in the production run-stage image — call
+          # python directly, same as compose/production/django/start.
+          args: ["python", "/app/manage.py", "migrate", "--noinput"]
+          envFrom:
+            - configMapRef:
+                name: qless-cafe-config
+            - secretRef:
+                name: qless-cafe-secrets
+          resources:
+            {{- toYaml .Values.django.resources | nindent 12 }}
+{{- end }}

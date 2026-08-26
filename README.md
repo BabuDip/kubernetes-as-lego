@@ -273,6 +273,93 @@ documents rather than in this local-first tutorial.
 
 ---
 
+## Step 7 — Package the same app with Helm
+
+Steps 1–6 use kustomize (`k8s/base` + `k8s/overlays/{uat,prod}`) — that stays
+the manifest source for [k8s/skaffold.yaml](k8s/skaffold.yaml)/Cloud Deploy.
+[k8s/helm-charts](k8s/helm-charts) packages the identical app as a
+**Helm chart** instead: the same Deployments/Services/StatefulSet, but as Go
+templates driven by `values.yaml` + `values-{uat,prod}.yaml`, rather than
+kustomize's base + JSON-patch overlays. It's a second, parallel way to deploy
+the same manifests — a lesson in contrasting the two tools, not a
+replacement. (One chart today, so it lives flat under `k8s/helm-charts`
+rather than `k8s/helm-charts/qless-cafe` — a second chart later would each
+get their own subfolder instead.)
+
+```bash
+cd k8s/helm-charts
+cp secrets-uat.yaml.example secrets-uat.yaml   # edit with real values, git-ignored
+helm install qless-cafe . -n qless-cafe-uat --create-namespace \
+  -f values-uat.yaml -f secrets-uat.yaml --set image.tag=latest
+```
+
+See [k8s/helm-charts/README.md](k8s/helm-charts/README.md) for the
+full install/upgrade commands (uat and prod) and how it maps onto the
+kustomize overlays.
+
+A chart directory is only half the picture — the other reason to use Helm
+over kustomize is that a chart **packages and versions** into something you
+can push to a registry and reuse without the source tree at all:
+
+```bash
+cd k8s/helm-charts
+helm package . --version 0.1.0             # produces qless-cafe-0.1.0.tgz
+helm push qless-cafe-0.1.0.tgz oci://REGISTRY/REPO
+
+# anywhere else, no checkout of this repo needed:
+helm install qless-cafe oci://REGISTRY/REPO/qless-cafe --version 0.1.0 \
+  -f values-prod.yaml --set image.tag=$(git rev-parse --short HEAD)
+```
+
+kustomize has no equivalent of this — `k8s/overlays/prod` only ever works
+checked out from this exact repo.
+
+---
+
+## Step 8 — Hand-rolled templates vs. official chart dependencies
+
+Everything in [k8s/helm-charts](k8s/helm-charts) is hand-written,
+including Postgres and Redis. That's the right call for `django`/`celery-worker`/`celery-beat` — it's our own app, so we want every field
+explicit. For infrastructure you *don't* maintain the logic for, Helm's own
+answer is chart **dependencies** (subcharts) instead of hand-rolling a
+Deployment/StatefulSet for it:
+
+```yaml
+# Chart.yaml
+dependencies:
+  - name: postgresql
+    version: "18.x.x"                  # pin a version — see helm's own best practices
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: postgresql.enabled       # lets values.yaml turn it on/off
+```
+
+`helm dependency update` then downloads it into `charts/` (plus a `Chart.lock`
+for reproducible re-fetches), and you configure it under its own namespaced
+values key (`postgresql.*`) instead of writing templates for it yourself.
+
+Two things worth knowing before reaching for this:
+
+1. **Namespacing** — a subchart only sees values under its own top-level key
+   in the parent's `values.yaml` (`postgresql:` here), except for `global:`
+   values, which every chart in the tree can read — see
+   [Helm's docs on global values](https://helm.sh/docs/topics/charts/#global-values).
+2. **Supply-chain risk** — Bitnami, the most commonly reached-for library of
+   "official" charts (Postgres, Redis, Mongo, ...), moved to a paid
+   "Bitnami Secure Images" model: only the newest chart version is reliably
+   free to pull anonymously, and pinning an exact version — this repo's own
+   "immutable tag, never `:latest`" rule (see [AGENTS.md](AGENTS.md)) — can
+   quietly stop working later without a subscription. Check a chart's
+   licensing model before depending on it in anything that needs to stay
+   reproducible.
+
+This repo keeps Redis hand-rolled long-term — it's an ephemeral cache/broker
+with no persistence or clustering to justify an off-the-shelf chart. Postgres
+is moving to [CloudNativePG](https://cloudnative-pg.io/) in a future step —
+a CNCF-hosted operator + `Cluster` custom resource, not a drop-in chart
+swap — rather than a paywalled Bitnami subchart.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

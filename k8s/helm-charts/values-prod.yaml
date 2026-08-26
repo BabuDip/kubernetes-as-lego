@@ -1,0 +1,33 @@
+# Overrides for the GKE prod environment — mirrors k8s/overlays/prod. This is
+# the only environment on the sandbox-k8s-as-lego GKE demo cluster (see
+# k8s/README.md) — deliberately no uat/staging here.
+# See README.md for the full install command.
+environment: prod
+
+ingress:
+  enabled: false
+
+gke:
+  enabled: true
+  staticIpName: qless-cafe-ip
+  certificateDomains:
+    - qless-cafe.catercareplatform.net
+  serviceAccountEmail: qless-cafe-django@sandbox-k8s-as-lego.iam.gserviceaccount.com
+
+config:
+  allowedHosts: "qless-cafe.catercareplatform.net,localhost"
+  gcpStaticBucketName: sandbox-k8s-as-lego-qless-cafe-static
+  gcpMediaBucketName: sandbox-k8s-as-lego-qless-cafe-media
+  emailBackend: django.core.mail.backends.console.EmailBackend
+
+# Two replicas of django/celery-worker so a rollout always leaves one pod
+# serving traffic; celery-beat MUST stay a single replica (see its template).
+django:
+  replicaCount: 2
+  # The GCE Ingress's auto-generated health check reuses this Host header
+  # (see django-backendconfig.yaml) — must be a host that's in
+  # config.allowedHosts, so use the real domain, not "localhost".
+  healthCheckHost: qless-cafe.catercareplatform.net
+
+celeryWorker:
+  replicaCount: 2
