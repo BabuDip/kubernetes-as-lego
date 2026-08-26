@@ -17,6 +17,8 @@ repos:
       - id: check-yaml
         # Helm templates use Go-template syntax ({{- ... }}) that isn't valid
         # standalone YAML, so only this parsing hook needs to skip them.
+        # rbac.yaml (and any other multi-doc manifest) needs --- support.
+        args: ["--allow-multiple-documents"]
         exclude: '^k8s/helm-charts/templates/'
       - id: debug-statements
 
