@@ -1,5 +1,5 @@
-# Default values for the qless-cafe chart. These defaults are dev/minikube-
-# leaning; environment-specific overrides live in values-uat.yaml /
+# Default values for the qless-cafe chart. These defaults are GKE-leaning
+# (matching k8s/base); environment-specific overrides live in values-uat.yaml /
 # values-prod.yaml (mirroring k8s/overlays/{uat,prod}) — see README.md for
 # full install commands.
 
