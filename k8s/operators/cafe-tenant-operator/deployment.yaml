@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cafe-tenant-operator
+  namespace: cafe-tenant-operator
+  labels:
+    app: cafe-tenant-operator
+spec:
+  replicas: 1
+  # A single reconciler — two replicas would double-process every event
+  # without leader-election wired up (kopf supports it, out of scope here).
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cafe-tenant-operator
+  template:
+    metadata:
+      labels:
+        app: cafe-tenant-operator
+    spec:
+      serviceAccountName: cafe-tenant-operator
+      containers:
+        - name: operator
+          image: cafe-tenant-operator:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: QLESS_CAFE_CHART_PATH
+              value: /chart
+            - name: QLESS_CAFE_IMAGE_REPOSITORY
+              value: qless-cafe
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

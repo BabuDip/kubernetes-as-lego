@@ -1,0 +1,10 @@
+apiVersion: platform.qless.cafe/v1alpha1
+kind: CafeTenant
+metadata:
+  name: downtown
+spec:
+  displayName: "Downtown QLess Cafe"
+  imageTag: localtest
+  plan: starter
+  seedDemoData: true
+  storageClassName: standard

@@ -1,0 +1,83 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: cafetenants.platform.qless.cafe
+spec:
+  group: platform.qless.cafe
+  scope: Cluster
+  names:
+    kind: CafeTenant
+    listKind: CafeTenantList
+    plural: cafetenants
+    singular: cafetenant
+    shortNames: ["ct"]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Namespace
+          type: string
+          jsonPath: .status.namespace
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            spec:
+              type: object
+              required: ["displayName", "imageTag"]
+              properties:
+                displayName:
+                  type: string
+                  description: Human-readable cafe name, used in logs/status only.
+                imageTag:
+                  type: string
+                  description: >-
+                    qless-cafe image tag to deploy for this tenant. Bump this
+                    to roll the tenant to a new version (immutable tags only
+                    — see AGENTS.md).
+                plan:
+                  type: string
+                  enum: ["starter", "growth"]
+                  default: "starter"
+                  description: >-
+                    Sizing preset — starter: 1 replica each; growth: 2
+                    replicas each (django/celery-worker).
+                seedDemoData:
+                  type: boolean
+                  default: false
+                  description: >-
+                    Run `manage.py seed_demo_data` once the tenant's django
+                    Deployment is Ready.
+                storageClassName:
+                  type: string
+                  default: "standard"
+                  description: >-
+                    PVC StorageClass for the tenant's Postgres — "standard"
+                    on minikube, "standard-rwo" on GKE.
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: Pending | Provisioning | Ready | Degraded | Failed.
+                message:
+                  type: string
+                namespace:
+                  type: string
+                releaseName:
+                  type: string
+                observedGeneration:
+                  type: integer
+                seeded:
+                  type: boolean
+                  description: Set once the one-off seed-demo-data Job has been created.
