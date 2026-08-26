@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: celery-beat
+  name: {{ include "qless-cafe.fullname" . }}-celery-beat
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "celery-beat" "component" "task-scheduler") $) | nindent 4 }}
 spec:
@@ -13,7 +13,7 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "qless-cafe.selectorLabels" (dict "app" "celery-beat" "component" "task-scheduler") | nindent 6 }}
+      {{- include "qless-cafe.selectorLabels" (merge (dict "app" "celery-beat" "component" "task-scheduler") $) | nindent 6 }}
   template:
     metadata:
       labels:
@@ -28,8 +28,8 @@ spec:
           args: ["/start-celerybeat"]
           envFrom:
             - configMapRef:
-                name: qless-cafe-config
+                name: {{ include "qless-cafe.fullname" . }}-config
             - secretRef:
-                name: qless-cafe-secrets
+                name: {{ include "qless-cafe.fullname" . }}-secrets
           resources:
             {{- toYaml .Values.celeryBeat.resources | nindent 12 }}

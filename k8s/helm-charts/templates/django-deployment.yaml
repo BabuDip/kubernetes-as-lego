@@ -5,7 +5,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: django
+  name: {{ include "qless-cafe.fullname" . }}-django
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "django" "component" "web") $) | nindent 4 }}
 spec:
@@ -17,7 +17,7 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      {{- include "qless-cafe.selectorLabels" (dict "app" "django" "component" "web") | nindent 6 }}
+      {{- include "qless-cafe.selectorLabels" (merge (dict "app" "django" "component" "web") $) | nindent 6 }}
   template:
     metadata:
       labels:
@@ -27,7 +27,7 @@ spec:
       # Workload Identity — only django gets GCS access (collectstatic,
       # signed media URLs); celery-worker/celery-beat/migrate keep the
       # namespace's "default" KSA, bound to nothing.
-      serviceAccountName: qless-cafe-django
+      serviceAccountName: {{ include "qless-cafe.fullname" . }}-django
       {{- end }}
       containers:
         - name: django
@@ -42,9 +42,9 @@ spec:
               containerPort: 8000
           envFrom:
             - configMapRef:
-                name: qless-cafe-config
+                name: {{ include "qless-cafe.fullname" . }}-config
             - secretRef:
-                name: qless-cafe-secrets
+                name: {{ include "qless-cafe.fullname" . }}-secrets
           readinessProbe:
             httpGet:
               # Unauthenticated, no DB/Redis dependency — see config/views.py.

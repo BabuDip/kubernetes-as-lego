@@ -12,7 +12,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: qless-cafe-migrate
+  name: {{ include "qless-cafe.fullname" . }}-migrate
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "migrate" "component" "database-migration") $) | nindent 4 }}
   annotations:
@@ -38,9 +38,9 @@ spec:
           args: ["python", "/app/manage.py", "migrate", "--noinput"]
           envFrom:
             - configMapRef:
-                name: qless-cafe-config
+                name: {{ include "qless-cafe.fullname" . }}-config
             - secretRef:
-                name: qless-cafe-secrets
+                name: {{ include "qless-cafe.fullname" . }}-secrets
           resources:
             {{- toYaml .Values.django.resources | nindent 12 }}
 {{- end }}

@@ -6,7 +6,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis
+  name: {{ include "qless-cafe.fullname" . }}-redis
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "redis" "component" "cache") $) | nindent 4 }}
 spec:
@@ -15,7 +15,7 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "qless-cafe.selectorLabels" (dict "app" "redis" "component" "cache") | nindent 6 }}
+      {{- include "qless-cafe.selectorLabels" (merge (dict "app" "redis" "component" "cache") $) | nindent 6 }}
   template:
     metadata:
       labels:

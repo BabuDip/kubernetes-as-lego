@@ -9,7 +9,7 @@
 apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:
-  name: django-backendconfig
+  name: {{ include "qless-cafe.fullname" . }}-django-backendconfig
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "django" "component" "web") $) | nindent 4 }}
 spec:

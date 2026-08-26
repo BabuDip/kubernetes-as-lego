@@ -3,16 +3,17 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: qless-cafe-config
+  name: {{ include "qless-cafe.fullname" . }}-config
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "qless-cafe" "component" "config") $) | nindent 4 }}
 data:
   DJANGO_SETTINGS_MODULE: {{ .Values.config.settingsModule | quote }}
   DJANGO_ALLOWED_HOSTS: {{ .Values.config.allowedHosts | quote }}
-  POSTGRES_HOST: postgres
+  POSTGRES_HOST: {{ include "qless-cafe.fullname" . }}-postgres
   POSTGRES_PORT: "5432"
   POSTGRES_DB: {{ .Values.config.postgresDb | quote }}
-  REDIS_URL: {{ .Values.config.redisUrl | quote }}
+  # Defaults to this release's own redis Service unless overridden.
+  REDIS_URL: {{ (.Values.config.redisUrl | default (printf "redis://%s-redis:6379/0" (include "qless-cafe.fullname" .))) | quote }}
   {{- if .Values.config.gcpStaticBucketName }}
   DJANGO_GCP_STATIC_BUCKET_NAME: {{ .Values.config.gcpStaticBucketName | quote }}
   {{- end }}

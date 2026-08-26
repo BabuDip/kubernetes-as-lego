@@ -6,7 +6,7 @@
 apiVersion: networking.gke.io/v1beta1
 kind: FrontendConfig
 metadata:
-  name: qless-cafe-frontend-config
+  name: {{ include "qless-cafe.fullname" . }}-frontend-config
   labels:
     {{- include "qless-cafe.labels" (merge (dict "app" "qless-cafe" "component" "ingress") $) | nindent 4 }}
 spec:

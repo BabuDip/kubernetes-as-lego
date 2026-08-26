@@ -39,7 +39,9 @@ config:
   # include "localhost" so kubelet's own probes pass.
   allowedHosts: "localhost,127.0.0.1"
   postgresDb: qless_cafe
-  redisUrl: redis://redis:6379/0
+  # Empty means "this release's own redis Service" (see templates/configmap.yaml)
+  # — only set this to point at an external Redis instance.
+  redisUrl: ""
   gcpStaticBucketName: ""
   gcpMediaBucketName: ""
   emailBackend: ""
