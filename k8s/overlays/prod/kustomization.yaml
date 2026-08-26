@@ -29,7 +29,7 @@ labels:
 images:
   - name: qless-cafe
     newName: australia-southeast1-docker.pkg.dev/sandbox-k8s-as-lego/qless-cafe/qless-cafe
-    newTag: e5b1005
+    newTag: 9104e5e
 
 secretGenerator:
   - name: qless-cafe-secrets
