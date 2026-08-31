@@ -39,7 +39,7 @@ dev = [
   "django-coverage-plugin==3.2.2",
   "django-stubs[compatible-mypy]==6.1.0",
   "django-upgrade==1.32.0",
-  "djangorestframework-stubs==3.18.0",
+  "djangorestframework-stubs==3.18.1",
   "djlint==1.44.2",
   "factory-boy==3.3.3",
   "mypy==2.3.1",
@@ -48,7 +48,7 @@ dev = [
   "pytest==9.1.1",
   "pytest-django==4.14.0",
   "pytest-sugar==1.1.1",
-  "ruff==0.16.4",
+  "ruff==0.16.5",
   "watchfiles==1.2.0",
 ]
 
