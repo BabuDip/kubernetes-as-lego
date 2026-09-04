@@ -27,7 +27,7 @@ dependencies = [
   "gunicorn==26.2.0",
   "hiredis==3.4.1",
   "pillow==12.3.0",
-  "psycopg[c]==3.3.4",
+  "psycopg[c]==3.3.5",
   "redis==8.1.0",
   "uvicorn[standard]==0.52.4",
   "uvicorn-worker==0.4.0",
@@ -35,20 +35,20 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "coverage==7.15.4",
+  "coverage==7.16.0",
   "django-coverage-plugin==3.2.2",
   "django-stubs[compatible-mypy]==6.1.0",
   "django-upgrade==1.32.0",
-  "djangorestframework-stubs==3.18.0",
+  "djangorestframework-stubs==3.18.1",
   "djlint==1.44.2",
   "factory-boy==3.3.3",
   "mypy==2.3.1",
   "pre-commit==4.6.2",
-  "psycopg[c]==3.3.4",
+  "psycopg[c]==3.3.5",
   "pytest==9.1.1",
   "pytest-django==4.14.0",
   "pytest-sugar==1.1.1",
-  "ruff==0.16.4",
+  "ruff==0.16.5",
   "watchfiles==1.2.0",
 ]
 
